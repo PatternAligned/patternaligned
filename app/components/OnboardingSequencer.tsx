@@ -1,10 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import GameSequencer from '@/components/CognitiveTests/GameSequencer';
-import RelationshipModelSelector from '@/components/RelationshipModelSelector';
-import FactsSheet from '@/components/FactsSheet';
-
+import GameSequencer from './CognitiveTests/GameSequencer';
+import RelationshipModelSelector from './RelationshipModelSelector';
+import FactsSheet from './FactsSheet';
 type Phase = 'games' | 'relationship' | 'facts';
 
 export default function OnboardingSequencer() {
