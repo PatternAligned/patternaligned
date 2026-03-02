@@ -22,13 +22,7 @@ interface EventLogData {
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-
-    if (!session?.user?.email) {
-      return NextResponse.json(
-        { error: 'Unauthorized: No session found' },
-        { status: 401 }
-      );
-    }
+    const userId = (session?.user as any)?.id || 'anonymous';
 
     const { event_type, metadata } = await request.json() as EventLogData;
 
@@ -49,7 +43,7 @@ export async function POST(request: NextRequest) {
     const { data, error } = await supabase
       .from('behavioral_events')
       .insert({
-       user_id: (session.user as any).id,
+        user_id: userId,
         event_type,
         metadata: metadata || {},
       });
