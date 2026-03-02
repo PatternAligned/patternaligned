@@ -1,14 +1,12 @@
-// pages/auth/signin.jsx
-// Login page
-// WHY: This is where users enter their email to get a magic link
-// No password needed (passwordless auth is more secure + better UX)
+'use client';
 
 import { signIn } from "next-auth/react";
 import { useState } from "react";
 import Link from "next/link";
 
-export default function SignIn() {
+export default function SignUp() {
   const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -20,21 +18,20 @@ export default function SignIn() {
     setMessage("");
 
     try {
-      // NextAuth signIn function
-      // Sends verification email with magic link
       const result = await signIn("email", {
         email,
-        redirect: false, // Don't auto-redirect, we'll handle it
+        redirect: false,
       });
 
       if (result.error) {
-        setError("Failed to send sign-in email. Try again.");
+        setError("Failed to send verification email. Try again.");
         console.error(result.error);
       } else {
         setMessage(
-          "Check your email for a sign-in link. It expires in 24 hours."
+          "Check your email to verify and complete signup. Link expires in 24 hours."
         );
-        setEmail(""); // Clear form
+        setEmail("");
+        setName("");
       }
     } catch (err) {
       setError("Something went wrong. Try again.");
@@ -45,9 +42,9 @@ export default function SignIn() {
   };
 
   return (
-    <div className="signin-container">
+    <div className="signup-container">
       <style jsx>{`
-        .signin-container {
+        .signup-container {
           min-height: 100vh;
           display: flex;
           align-items: center;
@@ -56,7 +53,7 @@ export default function SignIn() {
           font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         }
 
-        .signin-card {
+        .signup-card {
           width: 100%;
           max-width: 420px;
           padding: 40px;
@@ -65,25 +62,25 @@ export default function SignIn() {
           border-radius: 8px;
         }
 
-        .signin-header {
+        .signup-header {
           text-align: center;
           margin-bottom: 40px;
         }
 
-        .signin-title {
+        .signup-title {
           font-size: 28px;
           font-weight: 700;
           color: #ffffff;
           margin: 0 0 8px 0;
         }
 
-        .signin-subtitle {
+        .signup-subtitle {
           font-size: 14px;
           color: #999;
           margin: 0;
         }
 
-        .signin-form {
+        .signup-form {
           display: flex;
           flex-direction: column;
           gap: 16px;
@@ -156,33 +153,57 @@ export default function SignIn() {
           border: 1px solid #5a2a2a;
         }
 
-        .signin-footer {
+        .signup-footer {
           margin-top: 24px;
           text-align: center;
           font-size: 14px;
           color: #999;
         }
 
-        .signin-footer-link {
+        .signup-footer-link {
           color: #ffffff;
           text-decoration: none;
         }
 
-        .signin-footer-link:hover {
+        .signup-footer-link:hover {
           text-decoration: underline;
+        }
+
+        .signup-legal {
+          margin-top: 24px;
+          padding-top: 24px;
+          border-top: 1px solid #2a2a2a;
+          font-size: 12px;
+          color: #666;
+          line-height: 1.6;
         }
       `}</style>
 
-      <div className="signin-card">
-        <div className="signin-header">
-          <h1 className="signin-title">PatternAligned</h1>
-          <p className="signin-subtitle">Sign in to your account</p>
+      <div className="signup-card">
+        <div className="signup-header">
+          <h1 className="signup-title">Create Account</h1>
+          <p className="signup-subtitle">Join PatternAligned</p>
         </div>
 
         {message && <div className="message-box message-success">{message}</div>}
         {error && <div className="message-box message-error">{error}</div>}
 
-        <form onSubmit={handleSubmit} className="signin-form">
+        <form onSubmit={handleSubmit} className="signup-form">
+          <div className="form-group">
+            <label className="form-label" htmlFor="name">
+              Full Name (Optional)
+            </label>
+            <input
+              id="name"
+              type="text"
+              className="form-input"
+              placeholder="Your name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              disabled={isLoading}
+            />
+          </div>
+
           <div className="form-group">
             <label className="form-label" htmlFor="email">
               Email
@@ -204,15 +225,20 @@ export default function SignIn() {
             className="form-button"
             disabled={isLoading || !email}
           >
-            {isLoading ? "Sending..." : "Send Sign In Link"}
+            {isLoading ? "Sending..." : "Send Verification Link"}
           </button>
         </form>
 
-        <div className="signin-footer">
-          Don't have an account?{" "}
-          <Link href="/auth/signup" className="signin-footer-link">
-            Sign up
+        <div className="signup-footer">
+          Already have an account?{" "}
+          <Link href="/auth/signin" className="signup-footer-link">
+            Sign in
           </Link>
+        </div>
+
+        <div className="signup-legal">
+          By signing up, you agree to our Terms of Service and Privacy Policy.
+          We use behavioral analysis to improve your experience.
         </div>
       </div>
     </div>
