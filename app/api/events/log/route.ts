@@ -1,11 +1,15 @@
+export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+const supabase = process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY
+  ? createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY
+    )
+  : null;
 
 export const runtime = 'nodejs';
 
@@ -17,7 +21,7 @@ interface EventLogData {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession();
+    const session = await getServerSession(authOptions);
 
     if (!session?.user?.email) {
       return NextResponse.json(
@@ -26,69 +30,43 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { data: userData, error: userError } = await supabase
-      .from('users')
-      .select('id')
-      .eq('email', session.user.email)
-      .single();
+    const { event_type, metadata } = await request.json() as EventLogData;
 
-    if (userError || !userData) {
+    if (!event_type) {
       return NextResponse.json(
-        { error: 'User not found in database' },
-        { status: 404 }
-      );
-    }
-
-    const userId = userData.id;
-    const body: EventLogData = await request.json();
-
-    if (!body.event_type || !body.metadata) {
-      return NextResponse.json(
-        { error: 'Missing required fields: event_type and metadata' },
+        { error: 'event_type is required' },
         { status: 400 }
       );
     }
 
-    if (body.event_type === 'message_sent' && !body.message_id) {
+    if (!supabase) {
       return NextResponse.json(
-        { error: 'message_id required for message_sent events' },
-        { status: 400 }
+        { error: 'Database not initialized' },
+        { status: 500 }
       );
     }
 
     const { data, error } = await supabase
       .from('behavioral_events')
       .insert({
-        user_id: userId,
-        message_id: body.message_id || null,
-        event_type: body.event_type,
-        metadata: {
-          ...body.metadata,
-          logged_at: new Date().toISOString(),
-        },
-      })
-      .select();
+       user_id: (session.user as any).id,
+        event_type,
+        metadata: metadata || {},
+      });
 
     if (error) {
       console.error('Supabase error:', error);
       return NextResponse.json(
-        { error: 'Failed to log event', details: error.message },
+        { error: 'Failed to log event' },
         { status: 500 }
       );
     }
 
-    return NextResponse.json(
-      {
-        success: true,
-        message: 'Event logged',
-        event: data?.[0],
-      },
-      { status: 201 }
-    );
+    return NextResponse.json({ success: true, data }, { status: 201 });
   } catch (error) {
-    console.error('API error:', error);
+    console.error('Event logging error:', error);
     return NextResponse.json(
-      { error: 'Internal server error', details: String(error) },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }
