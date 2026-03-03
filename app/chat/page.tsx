@@ -30,7 +30,7 @@ export default function ChatPage() {
         `https://patternaligned-api.onrender.com/api/user/${session?.user?.email}/fingerprint`,
         {
           headers: {
-            Authorization: `Bearer ${await getToken()}`,
+            'x-user-email': session?.user?.email || '',
           },
         }
       );
@@ -41,33 +41,27 @@ export default function ChatPage() {
     }
   };
 
-  const getToken = async () => {
-    const response = await fetch('/api/auth/session');
-    const data = await response.json();
-    return data?.user?.id || '';
-  };
-
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim()) return;
 
+    const messageText = input;
     setLoading(true);
-    const userMessage = { role: 'user', content: input };
+    const userMessage = { role: 'user', content: messageText };
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
 
     try {
-      const token = session?.user?.email || '';
       const response = await fetch(
         'https://patternaligned-api.onrender.com/api/chat',
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
+            'x-user-email': session?.user?.email || '',
           },
           body: JSON.stringify({
-            message: input,
+            message: messageText,
             sessionId: `session-${Date.now()}`,
           }),
         }
@@ -78,6 +72,11 @@ export default function ChatPage() {
         setMessages((prev) => [
           ...prev,
           { role: 'assistant', content: data.response },
+        ]);
+      } else if (data.error) {
+        setMessages((prev) => [
+          ...prev,
+          { role: 'assistant', content: `Error: ${data.error}` },
         ]);
       }
     } catch (error) {
