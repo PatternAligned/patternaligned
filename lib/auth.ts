@@ -8,7 +8,6 @@ export const authOptions: NextAuthOptions = {
       clientId: process.env.GITHUB_ID || "",
       clientSecret: process.env.GITHUB_SECRET || "",
       allowDangerousEmailAccountLinking: true,
-      scope: "read:user user:email",
     }),
   ],
   session: {
@@ -45,6 +44,10 @@ export const authOptions: NextAuthOptions = {
         (session.user as any).id = token.id;
       }
       return session;
+    },
+    async redirect({ url, baseUrl }: any) {
+      if (url.startsWith(baseUrl)) return url;
+      return baseUrl + "/chat";
     },
   },
   pages: {
