@@ -77,3 +77,4 @@ interface GameWrapperProps {
 function GameWrapper({ component: Component, onComplete }: GameWrapperProps) {
   return <Component onGameComplete={onComplete} />;
 }
+
