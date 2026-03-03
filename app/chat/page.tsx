@@ -1,199 +1,180 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-
-interface Message {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  metadata?: {
-    modelUsed?: string;
-    tokensUsed?: number;
-    reasoningDepth?: number;
-    decisionVelocity?: string;
-  };
-}
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 export default function ChatPage() {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const { data: session, status } = useSession();
+  const router = useRouter();
+  const [messages, setMessages] = useState<any[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  const [fingerprint, setFingerprint] = useState<any>(null);
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    if (status === 'unauthenticated') {
+      router.push('/auth/signin');
+    }
+  }, [status, router]);
 
-  const handleSend = async () => {
+  useEffect(() => {
+    if (session?.user) {
+      fetchFingerprint();
+    }
+  }, [session]);
+
+  const fetchFingerprint = async () => {
+    try {
+      const res = await fetch(
+        `https://patternaligned-api.onrender.com/api/user/${session?.user?.email}/fingerprint`,
+        {
+          headers: {
+            Authorization: `Bearer ${await getToken()}`,
+          },
+        }
+      );
+      const data = await res.json();
+      setFingerprint(data);
+    } catch (error) {
+      console.error('Error fetching fingerprint:', error);
+    }
+  };
+
+  const getToken = async () => {
+    const response = await fetch('/api/auth/session');
+    const data = await response.json();
+    return data?.user?.id || '';
+  };
+
+  const sendMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!input.trim()) return;
 
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      role: 'user',
-      content: input,
-    };
-
+    setLoading(true);
+    const userMessage = { role: 'user', content: input };
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
-    setLoading(true);
 
     try {
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          message: input,
-          previousContext: messages.map((m) => `${m.role}: ${m.content}`).join('\n'),
-        }),
-      });
+      const token = session?.user?.email || '';
+      const response = await fetch(
+        'https://patternaligned-api.onrender.com/api/chat',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            message: input,
+            sessionId: `session-${Date.now()}`,
+          }),
+        }
+      );
 
       const data = await response.json();
-
-      if (data.success) {
-        const assistantMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          role: 'assistant',
-          content: data.response,
-          metadata: data.metadata,
-        };
-        setMessages((prev) => [...prev, assistantMessage]);
-      } else {
-        const errorMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          role: 'assistant',
-          content: `Error: ${data.error || 'Unknown error'}`,
-        };
-        setMessages((prev) => [...prev, errorMessage]);
+      if (data.response) {
+        setMessages((prev) => [
+          ...prev,
+          { role: 'assistant', content: data.response },
+        ]);
       }
     } catch (error) {
-      const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: `Error: ${error instanceof Error ? error.message : 'Failed to send message'}`,
-      };
-      setMessages((prev) => [...prev, errorMessage]);
+      console.error('Chat error:', error);
+      setMessages((prev) => [
+        ...prev,
+        { role: 'assistant', content: 'Error processing request' },
+      ]);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
-  };
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="text-white">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!session) return null;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#0a0a0a', color: '#fff' }}>
+    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black flex flex-col">
       {/* Header */}
-      <div style={{ padding: '20px', borderBottom: '1px solid #333', textAlign: 'center' }}>
-        <h1 style={{ margin: 0, fontSize: '24px' }}>Nova Chat</h1>
-        <p style={{ margin: '5px 0 0 0', fontSize: '12px', color: '#888' }}>Powered by Claude Haiku/Sonnet</p>
+      <div className="border-b border-white/10 p-6">
+        <h1 className="text-2xl font-light text-white mb-2">Nova Chat</h1>
+        <p className="text-silver text-sm">
+          Personalized by your behavioral profile
+        </p>
+        {fingerprint && (
+          <p className="text-xs text-white/50 mt-2">
+            Confidence: {(fingerprint.confidence * 100).toFixed(0)}%
+          </p>
+        )}
       </div>
 
       {/* Messages */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
-        {messages.length === 0 && (
-          <div style={{ textAlign: 'center', color: '#888', marginTop: '40px' }}>
-            <p>Start a conversation with Nova</p>
-          </div>
-        )}
-
-        {messages.map((message) => (
-          <div
-            key={message.id}
-            style={{
-              display: 'flex',
-              justifyContent: message.role === 'user' ? 'flex-end' : 'flex-start',
-              gap: '10px',
-            }}
-          >
-            <div
-              style={{
-                maxWidth: '70%',
-                padding: '12px 16px',
-                borderRadius: '8px',
-                backgroundColor: message.role === 'user' ? '#2563eb' : '#1f2937',
-                wordWrap: 'break-word',
-              }}
-            >
-              <p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{message.content}</p>
-              {message.metadata && (
-                <div style={{ marginTop: '8px', fontSize: '11px', color: '#aaa', borderTop: '1px solid #444', paddingTop: '8px' }}>
-                  <p style={{ margin: '2px 0' }}>Model: {message.metadata.modelUsed}</p>
-                  <p style={{ margin: '2px 0' }}>Tokens: {message.metadata.tokensUsed}</p>
-                  <p style={{ margin: '2px 0' }}>Depth: {message.metadata.reasoningDepth}/10</p>
-                  <p style={{ margin: '2px 0' }}>Velocity: {message.metadata.decisionVelocity}</p>
-                </div>
-              )}
+      <div className="flex-1 overflow-y-auto p-6 space-y-4">
+        {messages.length === 0 ? (
+          <div className="flex items-center justify-center h-full">
+            <div className="text-center">
+              <p className="text-white/50 text-sm">
+                Start a conversation with Nova
+              </p>
             </div>
           </div>
-        ))}
-
+        ) : (
+          messages.map((msg, idx) => (
+            <div
+              key={idx}
+              className={`flex ${
+                msg.role === 'user' ? 'justify-end' : 'justify-start'
+              }`}
+            >
+              <div
+                className={`max-w-xs px-4 py-2 rounded-lg ${
+                  msg.role === 'user'
+                    ? 'bg-white/10 text-white'
+                    : 'bg-white/5 text-white/90'
+                }`}
+              >
+                <p className="text-sm">{msg.content}</p>
+              </div>
+            </div>
+          ))
+        )}
         {loading && (
-          <div style={{ display: 'flex', gap: '5px' }}>
-            <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#888', animation: 'pulse 1.5s infinite' }} />
-            <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#888', animation: 'pulse 1.5s infinite 0.2s' }} />
-            <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#888', animation: 'pulse 1.5s infinite 0.4s' }} />
+          <div className="flex justify-start">
+            <div className="bg-white/5 px-4 py-2 rounded-lg">
+              <p className="text-white/70 text-sm">Nova is thinking...</p>
+            </div>
           </div>
         )}
-
-        <div ref={messagesEndRef} />
       </div>
 
       {/* Input */}
-      <div style={{ padding: '20px', borderTop: '1px solid #333' }}>
-        <div style={{ display: 'flex', gap: '10px' }}>
+      <div className="border-t border-white/10 p-6">
+        <form onSubmit={sendMessage} className="flex gap-4">
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
             placeholder="Type your message..."
             disabled={loading}
-            style={{
-              flex: 1,
-              padding: '12px',
-              borderRadius: '8px',
-              border: '1px solid #444',
-              backgroundColor: '#1f2937',
-              color: '#fff',
-              fontSize: '14px',
-              fontFamily: 'monospace',
-            }}
+            className="flex-1 bg-white/5 border border-white/20 rounded-lg px-4 py-2 text-white placeholder-white/50 focus:outline-none focus:border-white/40"
           />
           <button
-            onClick={handleSend}
+            type="submit"
             disabled={loading || !input.trim()}
-            style={{
-              padding: '12px 20px',
-              borderRadius: '8px',
-              border: 'none',
-              backgroundColor: loading || !input.trim() ? '#444' : '#2563eb',
-              color: '#fff',
-              cursor: loading || !input.trim() ? 'not-allowed' : 'pointer',
-              fontSize: '14px',
-              fontWeight: 'bold',
-            }}
+            className="px-6 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20 disabled:opacity-50 transition-all"
           >
-            {loading ? 'Sending...' : 'Send'}
+            Send
           </button>
-        </div>
+        </form>
       </div>
-
-      <style>{`
-        @keyframes pulse {
-          0%, 100% { opacity: 0.3; }
-          50% { opacity: 1; }
-        }
-      `}</style>
     </div>
   );
 }
