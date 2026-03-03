@@ -47,7 +47,7 @@ export const authOptions: NextAuthOptions = {
     },
     async redirect({ url, baseUrl }: any) {
       if (url.startsWith(baseUrl)) return url;
-      return baseUrl + "/chat";
+      return baseUrl + "/dashboard";
     },
   },
   pages: {
