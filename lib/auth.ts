@@ -7,6 +7,8 @@ export const authOptions: NextAuthOptions = {
     GitHubProvider({
       clientId: process.env.GITHUB_ID || "",
       clientSecret: process.env.GITHUB_SECRET || "",
+      allowDangerousEmailAccountLinking: true,
+      scope: "read:user user:email",
     }),
   ],
   session: {
@@ -16,6 +18,7 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, account, profile }: any) {
       if (account && profile) {
         console.log("🔑 JWT: Starting upsert for github_id:", profile.id);
+        console.log("🔑 JWT: Profile data:", { id: profile.id, login: profile.login, email: profile.email });
         
         const result = await upsertUser({
           id: String(profile.id),
@@ -26,7 +29,6 @@ export const authOptions: NextAuthOptions = {
         });
         
         console.log("🔑 JWT: upsertUser result:", result);
-        console.log("🔑 JWT: result.user:", result.user);
 
         if (result.success && result.user) {
           console.log("🔑 JWT: Setting token.id to UUID:", result.user.id);
