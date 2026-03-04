@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
     // Notify hello@patternaligned.com
     await resend.emails.send({
       from: 'PatternAligned <noreply@patternaligned.com>',
-      to: 'hello@patternaligned.com',
+      to: 'leftymediaco@gmail.com',
       subject: `New waitlist signup: ${normalized}`,
       html: `
         <div style="font-family:monospace;background:#000;color:#fff;padding:40px;max-width:500px">
