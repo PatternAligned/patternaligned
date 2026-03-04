@@ -2,7 +2,7 @@
 const nextConfig = {
   async rewrites() {
     return {
-      afterFiles: [
+      fallback: [
         {
           source: '/api/:path*',
           destination: 'https://patternaligned-api.onrender.com/api/:path*',
