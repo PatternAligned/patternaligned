@@ -1,6 +1,5 @@
 'use client';
 import Link from 'next/link';
-import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import PALogo from './PALogo';
 
@@ -21,16 +20,7 @@ export default function Header() {
     >
       <div className="max-w-7xl mx-auto px-8 h-16 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-3">
-          {/* Use PA-512.png if available, else fallback to SVG mark */}
-          <div className="w-7 h-7 relative flex items-center justify-center">
-            <Image
-              src="/PA-512.png"
-              alt="PatternAligned"
-              width={28}
-              height={28}
-              onError={(e) => { e.currentTarget.style.display = 'none'; }}
-            />
-          </div>
+          <PALogo size={24} />
           <span className="text-white text-sm font-medium tracking-[0.15em] uppercase">
             PatternAligned
           </span>
@@ -45,7 +35,6 @@ export default function Header() {
           </a>
         </nav>
 
-        {/* Mobile: just the logo text, no buttons */}
         <div className="md:hidden" />
       </div>
     </header>

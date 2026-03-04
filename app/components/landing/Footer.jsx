@@ -10,9 +10,6 @@ export default function Footer() {
         </div>
 
         <nav className="flex flex-wrap gap-8">
-          <a href="#how-it-works" className="text-zinc-600 hover:text-white text-xs tracking-[0.15em] uppercase transition-colors duration-200">
-            How It Works
-          </a>
           <a href="mailto:hello@patternaligned.com" className="text-zinc-600 hover:text-white text-xs tracking-[0.15em] uppercase transition-colors duration-200">
             Contact
           </a>

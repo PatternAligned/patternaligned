@@ -21,21 +21,25 @@ export default function CTA() {
       className="bg-zinc-950 border-t border-zinc-800 py-40 px-8"
     >
       <div
-        className="max-w-7xl mx-auto text-center transition-all duration-1000"
+        className="max-w-3xl mx-auto text-center transition-all duration-1000"
         style={{ opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(24px)' }}
       >
-        <div className="flex justify-center mb-10">
-          <PALogo size={40} />
+        <div className="flex justify-center mb-12">
+          <PALogo size={44} />
         </div>
         <h2
-          className="text-white font-light tracking-tight mb-6"
+          className="text-white font-light tracking-tight mb-10"
           style={{ fontSize: 'clamp(2rem, 5vw, 4rem)' }}
         >
           This isn't for everyone.
         </h2>
-        <p className="text-zinc-300 text-xl font-light max-w-xl mx-auto leading-relaxed">
-          PatternAligned is for high-agency thinkers who want AI that
-          meets them exactly — not a generic assistant pretending to.
+        <p className="text-zinc-200 text-lg font-light leading-relaxed mb-6">
+          You notice when models change. You catch drift. You've rewritten the same
+          system prompt seventeen times because the model updated and forgot who you are.
+        </p>
+        <p className="text-zinc-400 text-base font-light leading-relaxed">
+          Nova doesn't reset. Your fingerprint loads at session start — every time.
+          Not a workaround. Infrastructure.
         </p>
       </div>
     </section>
