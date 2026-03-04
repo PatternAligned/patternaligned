@@ -1,11 +1,9 @@
-'use server';
+import { Pool } from "pg";
 
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false },
+});
 
 export async function upsertUser(githubUser: {
   id: string;
@@ -15,31 +13,21 @@ export async function upsertUser(githubUser: {
   avatar_url: string;
 }) {
   try {
-    const { data, error } = await supabase
-      .from('users')
-      .upsert(
-        {
-          github_id: githubUser.id,
-          github_login: githubUser.login,
-          name: githubUser.name,
-          email: githubUser.email,
-          avatar_url: githubUser.avatar_url,
-          last_login_at: new Date().toISOString(),
-        },
-        {
-          onConflict: 'github_id', // If github_id exists, update it
-        }
-      )
-      .select();
-
-    if (error) {
-      console.error('Error upserting user:', error);
-      return { success: false, error: error.message };
-    }
-
-    return { success: true, user: data[0] };
+    const result = await pool.query(
+      `INSERT INTO users (github_id, github_login, name, email, avatar_url, created_at)
+       VALUES ($1, $2, $3, $4, $5, NOW())
+       ON CONFLICT (github_id) DO UPDATE
+       SET email = EXCLUDED.email,
+           name = EXCLUDED.name,
+           avatar_url = EXCLUDED.avatar_url,
+           updated_at = NOW()
+       RETURNING id`,
+      [githubUser.id, githubUser.login, githubUser.name, githubUser.email, githubUser.avatar_url]
+    );
+    
+    return { success: true, user: result.rows[0] };
   } catch (err) {
-    console.error('Unexpected error:', err);
-    return { success: false, error: 'Failed to save user' };
+    console.error("upsertUser failed:", err);
+    return { success: false };
   }
 }
