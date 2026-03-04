@@ -9,6 +9,7 @@ const PORT = process.env.PORT || 3000;
 // Database connection
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false },
 });
 
 // Middleware
@@ -37,12 +38,18 @@ app.post('/api/chat', getUser, async (req, res) => {
     const { message, sessionId } = req.body;
     const userEmail = req.user.email;
 
+    // Ensure user exists in Render DB
+    await pool.query(
+      `INSERT INTO users (email, created_at) VALUES ($1, NOW()) ON CONFLICT (email) DO NOTHING`,
+      [userEmail]
+    );
+
     // Fetch user's behavioral fingerprint
     const fingerprintResult = await pool.query(
       'SELECT profile_data FROM behavioral_fingerprints WHERE user_id = (SELECT id FROM users WHERE email = $1) ORDER BY created_at DESC LIMIT 1',
       [userEmail]
     );
-    
+
     const fingerprint = fingerprintResult.rows[0]?.profile_data || {};
 
     // Build system prompt with behavioral injection
@@ -83,7 +90,7 @@ app.get('/api/user/:userEmail/export', getUser, async (req, res) => {
       'SELECT * FROM chat_messages WHERE user_id = (SELECT id FROM users WHERE email = $1) ORDER BY created_at DESC',
       [req.params.userEmail]
     );
-    
+
     const fingerprint = await pool.query(
       'SELECT * FROM behavioral_fingerprints WHERE user_id = (SELECT id FROM users WHERE email = $1) ORDER BY created_at DESC LIMIT 1',
       [req.params.userEmail]
