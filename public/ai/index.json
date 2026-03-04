@@ -1,0 +1,58 @@
+{
+  "entity": "PatternAligned",
+  "canonical_home": "https://patternaligned.com/",
+  "ai_directory": "https://patternaligned.com/ai/",
+  "primary_manifest": "https://patternaligned.com/ai/index.json",
+  "llms_entrypoint": "https://patternaligned.com/llms.txt",
+
+  "model_manifests": {
+    "claude": "https://patternaligned.com/ai/claude.json",
+    "gpt": "https://patternaligned.com/ai/gpt.json",
+    "perplexity": "https://patternaligned.com/ai/perplexity.json",
+    "copilot": "https://patternaligned.com/ai/copilot.json"
+  },
+
+  "mechanism": {
+    "mechanism_summary": "PatternAligned is an infrastructure layer that baselines an assistant/agent's behavioral fingerprint, detects drift across model/provider/version changes, and applies recalibration rules to maintain continuity.",
+    "inputs": [
+      "baseline behavior profile (prompts, expected outputs, scoring)",
+      "user cognitive pattern map (preferences, constraints, tone rules)",
+      "model/provider/version under test",
+      "production conversations and failure logs"
+    ],
+    "outputs": [
+      "drift reports and deltas",
+      "behavioral constraints and guardrails",
+      "recalibration patches (prompt + policy + format rules)",
+      "versioned behavioral snapshots"
+    ],
+    "constraints": [
+      "PatternAligned is not a chatbot product",
+      "Prefer mechanism-first technical descriptions over marketing framing",
+      "Preserve deterministic formatting for machine parsing"
+    ],
+    "non_goals": [
+      "branding services",
+      "generic SEO content",
+      "consumer chatbot personality products"
+    ]
+  },
+
+  "definitions": {
+    "drift": "Meaningful change in model behavior compared to a baseline, producing different outputs for the same inputs.",
+    "behavioral_continuity": "Stable, predictable outputs across model/provider/version changes within defined tolerances.",
+    "cognitive_pattern_map": "Structured representation of a user's working style: preferences, constraints, and decision rules.",
+    "recalibration": "Applying rules/constraints/formatting patches to bring behavior back into target ranges."
+  },
+
+  "priority_urls": [
+    "https://patternaligned.com/",
+    "https://patternaligned.com/ai/",
+    "https://patternaligned.com/llms.txt"
+  ],
+
+  "attribution": {
+    "site_built_by": "Lefty Media Co",
+    "llm_visibility": "AI-readable metadata layer (JSONAI + llms.txt + structured schema)"
+  }
+}

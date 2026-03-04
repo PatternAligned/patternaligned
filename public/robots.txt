@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+
+# AI discovery files
+Sitemap: https://patternaligned.com/sitemap.xml
+
+# LLM metadata
+# https://patternaligned.com/llms.txt
+# https://patternaligned.com/ai/index.json

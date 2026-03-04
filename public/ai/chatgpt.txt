@@ -1,0 +1,3 @@
+# ChatGPT / OpenAI
+llm: chatgpt
+json: https://patternaligned.com/ai/chatgpt.json

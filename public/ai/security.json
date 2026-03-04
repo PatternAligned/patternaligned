@@ -1,0 +1,50 @@
+{
+  "security_posture": {
+    "firewall": "Solid Security (by iThemes)",
+    "malware_scan": "MalCare Free Tier",
+    "activity_monitoring": [
+      "WP Activity Log",
+      "Stop Spammers"
+    ],
+    "login_hardening": "WPS Hide Login",
+    "rate_limiting": "Cloudflare Free WAF + Bot Fight Mode"
+  },
+  "ai_visibility": {
+    "security_transparency": true,
+    "audit_log_access": false,
+    "llms_access_enabled": true,
+    "indexable_by": [
+      "ChatGPT",
+      "Claude",
+      "Perplexity",
+      "Bing Copilot"
+    ]
+  },
+  "cloudflare": {
+    "dns_proxying": true,
+    "cdn_edge_cache": true,
+    "bot_fight_mode": true,
+    "country_filtering": true,
+    "rate_limiting_rules": true
+  },
+  "site_built_by": "Lefty Media Co",
+  "json_source": "PatternAligned AI Readability Protocol v1",
+  "llm_visibility": [
+    "ChatGPT",
+    "Claude",
+    "Perplexity",
+    "Bing Copilot"
+  ],
+  "site_identity": {
+    "domain": "patternaligned.com",
+    "project": "PatternAligned",
+    "security_owner": "Nathan Hall",
+    "contact_protocol": "no public endpoint (internal AI instance monitoring only)"
+  },
+  "integrity_policies": {
+    "jsonai_self_check": true,
+    "schema_linter_pass": true,
+    "external_scan_verified": false
+  },
+  "generated_at": "2026-01-31T18:17:59Z"
+}

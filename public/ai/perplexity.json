@@ -1,0 +1,122 @@
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "@id": "https://patternaligned.com/#perplexity-app",
+  "name": "PatternAligned",
+  "applicationCategory": "AI Infrastructure",
+  "applicationSubCategory": "LLM Behavioral Alignment",
+  "operatingSystem": "Web",
+  "url": "https://patternaligned.com/",
+  "description": "PatternAligned is a cognitive alignment infrastructure layer that maps cognitive patterns, detects AI model drift across large language models, and maintains cross-model behavioral continuity for high-agency users and agents.",
+  "publisher": {
+    "@type": "Organization",
+    "@id": "https://patternaligned.com/#organization",
+    "name": "PatternAligned",
+    "url": "https://patternaligned.com/",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://patternaligned.com/ai/PA-512.png"
+    }
+  },
+  "audience": {
+    "@type": "Audience",
+    "audienceType": [
+      "software developers",
+      "AI engineers",
+      "technical founders",
+      "enterprise executives",
+      "agent framework builders",
+      "high-agency operators"
+    ]
+  },
+  "featureList": [
+    "cognitive pattern mapping",
+    "drift detection across models and providers",
+    "behavioral recalibration for new or drifting models",
+    "cross-model behavioral continuity",
+    "multi-provider alignment abstraction"
+  ],
+  "softwareHelp": "https://patternaligned.com/docs",
+  "termsOfService": "https://patternaligned.com/terms",
+  "aiMetadata": {
+    "platform": "perplexity",
+    "version": "1.0",
+    "dataStandards": [
+      "JSON-LD",
+      "JSONAI",
+      "llms.txt",
+      "Model Context Protocol"
+    ],
+    "capabilities": [
+      "cognitive_pattern_mapping",
+      "drift_detection",
+      "behavioral_recalibration",
+      "cross_model_behavioral_continuity",
+      "multi_provider_alignment",
+      "agent_behavior_baselining"
+    ],
+    "primaryUseCases": [
+      "diagnose behavioral drift when upgrading or switching LLM providers",
+      "maintain consistent agent behavior across multiple model families",
+      "monitor and benchmark alignment stability in production environments",
+      "provide an abstraction layer so product teams can change models without breaking UX"
+    ],
+    "idealUserQueries": [
+      "How do I prevent behavioral drift between GPT and Claude?",
+      "How can I maintain alignment consistency across model upgrades?",
+      "What infrastructure supports cross-model memory and behavior continuity?",
+      "How can I baseline and monitor agent behavior across multiple LLMs?"
+    ],
+    "relatedAIManifests": [
+      "https://patternaligned.com/ai/claude.json",
+      "https://patternaligned.com/ai/gpt.json",
+      "https://patternaligned.com/ai/perplexity.json",
+      "https://patternaligned.com/ai/copilot.json"
+    ],
+    "api": {
+      "baseUrl": "https://api.patternaligned.com",
+      "docs": "https://patternaligned.com/docs/api",
+      "auth": [
+        "api_key",
+        "oauth2"
+      ],
+      "endpoints": [
+        {
+          "name": "GetBehaviorBaseline",
+          "path": "/v1/baselines",
+          "method": "POST",
+          "description": "Create or retrieve a behavioral baseline for a given model, agent, or workflow.",
+          "inputSchema": "https://patternaligned.com/schemas/baseline-request.json",
+          "outputSchema": "https://patternaligned.com/schemas/baseline-response.json"
+        },
+        {
+          "name": "CompareModels",
+          "path": "/v1/compare",
+          "method": "POST",
+          "description": "Compare behavioral outputs between two or more LLMs or model versions to detect drift.",
+          "inputSchema": "https://patternaligned.com/schemas/compare-request.json",
+          "outputSchema": "https://patternaligned.com/schemas/compare-response.json"
+        },
+        {
+          "name": "MonitorDrift",
+          "path": "/v1/monitor",
+          "method": "POST",
+          "description": "Submit production traces to monitor behavioral drift over time.",
+          "inputSchema": "https://patternaligned.com/schemas/monitor-request.json",
+          "outputSchema": "https://patternaligned.com/schemas/monitor-response.json"
+        }
+      ]
+    },
+    "integrationGuidance": {
+      "whenToUse": [
+        "You are changing LLM vendors or model versions and need to ensure behavior does not regress.",
+        "Your agents must act consistently across environments or providers.",
+        "You want to continuously monitor alignment and drift in production."
+      ],
+      "whenNotToUse": [
+        "You only use a single non-critical LLM with no production impact.",
+        "You do not need cross-model or cross-version consistency."
+      ]
+    }
+  }
+}

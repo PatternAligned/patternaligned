@@ -1,0 +1,32 @@
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "PatternAligned",
+  "url": "https://patternaligned.com/",
+  "description": "PatternAligned is a cognitive alignment infrastructure layer that maps cognitive patterns, detects AI model drift across large language models, and maintains cross-model alignment for high-agency users.",
+  "publisher": {
+    "@type": "Organization",
+    "name": "PatternAligned",
+    "url": "https://patternaligned.com/",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://patternaligned.com/ai/PA-512.png"
+    }
+  },
+  "keywords": [
+    "cognitive alignment",
+    "AI drift detection",
+    "cross-model continuity",
+    "LLM infrastructure",
+    "developer tooling",
+    "enterprise AI"
+  ],
+  "mainEntity": {
+    "@type": "SoftwareApplication",
+    "name": "PatternAligned",
+    "operatingSystem": "Web",
+    "applicationCategory": "AI Infrastructure",
+    "description": "Behavioral infrastructure layer for LLM alignment and drift control.",
+    "url": "https://patternaligned.com/"
+  }
+}

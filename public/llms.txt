@@ -1,41 +1,15 @@
 # PatternAligned
+# AI discoverability index for LLM crawlers
 
-## What is PatternAligned?
+name: PatternAligned
+type: cognitive alignment infrastructure
+summary: Behavioral infrastructure layer that maps cognitive patterns, detects AI model drift, and maintains cross-model alignment for high-agency users.
 
-PatternAligned is a behavioral intelligence platform for high-agency thinkers. It builds a persistent cognitive fingerprint from a series of behavioral probes and pattern-recognition games, then uses that fingerprint to calibrate Nova — an AI assistant that maintains consistency across sessions.
+primary_urls:
+- https://patternaligned.com/
+- https://patternaligned.com/sitemap_index.xml
 
-## Core Problem
-
-Generic AI assistants reset to default behavior with every session. They don't hold your communication style, cognitive pace, risk tolerance, or working rhythm. PatternAligned solves this by creating a durable behavioral model that persists across every conversation.
-
-## How It Works
-
-1. **Cognitive Fingerprint** — Six precision probes across curiosity, problem-solving style, pace/rhythm, communication register, risk tolerance, and energy patterns.
-2. **Pattern Games** — Behavioral scenarios that reveal how you actually work, not how you think you work.
-3. **Nova Calibration** — Your fingerprint is loaded into Nova, which adapts tone, depth, and cadence accordingly.
-4. **Persistent Intelligence** — The model reinforces with every session. No resets. No drift.
-
-## Who It's For
-
-High-agency knowledge workers, founders, engineers, researchers, and writers who need AI that meets them at their cognitive level — not a generic assistant pretending to.
-
-## Key Features
-
-- Behavioral fingerprinting (not personality typing)
-- Pattern correlation engine (detects synergies and productive contradictions)
-- Nova AI chat calibrated to your fingerprint
-- Persistent session memory
-- GitHub OAuth authentication
-
-## Technology
-
-- Frontend: Next.js (React), Tailwind CSS
-- AI: Claude (Anthropic) via Nova router
-- Auth: NextAuth with GitHub OAuth
-- Database: PostgreSQL (Render)
-- Deployment: Vercel
-
-## Contact
-
-Website: https://patternaligned.com
-Email: hello@patternaligned.com
+llm_metadata:
+- https://patternaligned.com/ai/chatgpt.txt
+- https://patternaligned.com/ai/claude_llms.txt
+- https://patternaligned.com/ai/perplexity.txt

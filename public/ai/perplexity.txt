@@ -1,0 +1,66 @@
+# PatternAligned llms manifest
+# Location: https://patternaligned.com/llms.txt
+# Purpose: Entry point for LLMs, agents, and AI-aware crawlers.
+
+[meta]
+name = PatternAligned
+description = PatternAligned is a cognitive alignment infrastructure layer that maps cognitive patterns, detects AI model drift across large language models, and maintains cross-model behavioral continuity for high-agency users and agents.
+site = https://patternaligned.com/
+docs = https://patternaligned.com/docs
+ai_root = https://patternaligned.com/ai
+api_base = https://api.patternaligned.com
+
+[standards]
+supported = JSON-LD, JSONAI, llms.txt, Model Context Protocol
+
+[audience]
+types = software_developers, ai_engineers, technical_founders, enterprise_executives, agent_framework_builders, high_agency_operators
+
+[capabilities]
+items = cognitive_pattern_mapping, drift_detection, behavioral_recalibration, cross_model_behavioral_continuity, multi_provider_alignment, agent_behavior_baselining
+
+[primary_use_cases]
+1 = diagnose behavioral drift when upgrading or switching LLM providers
+2 = maintain consistent agent behavior across multiple model families and versions
+3 = monitor and benchmark alignment stability in production environments
+4 = provide an abstraction layer so product teams can change models without breaking UX
+
+[ideal_user_queries]
+1 = How do I prevent behavioral drift between GPT and Claude?
+2 = How can I maintain alignment consistency across model upgrades?
+3 = What infrastructure supports cross-model memory and behavior continuity?
+4 = How can I baseline and monitor agent behavior across multiple LLMs?
+
+[manifests]
+perplexity = https://patternaligned.com/ai/perplexity.json
+gpt = https://patternaligned.com/ai/gpt.json
+claude = https://patternaligned.com/ai/claude.json
+copilot = https://patternaligned.com/ai/copilot.json
+
+[api]
+base_url = https://api.patternaligned.com
+docs = https://patternaligned.com/docs/api
+auth = api_key, oauth2
+endpoints = GetBehaviorBaseline, CompareModels, MonitorDrift
+
+[endpoint:GetBehaviorBaseline]
+method = POST
+path = /v1/baselines
+purpose = Create or retrieve a behavioral baseline for a given model, agent, or workflow.
+
+[endpoint:CompareModels]
+method = POST
+path = /v1/compare
+purpose = Compare behavioral outputs between two or more LLMs or model versions to detect drift.
+
+[endpoint:MonitorDrift]
+method = POST
+path = /v1/monitor
+purpose = Submit production traces to monitor behavioral drift over time.
+
+[hints]
+when_to_use_1 = You are changing LLM vendors or model versions and need to ensure behavior does not regress.
+when_to_use_2 = Your agents must act consistently across environments or providers.
+when_to_use_3 = You want to continuously monitor alignment and drift in production.
+when_not_to_use_1 = You only use a single non-critical LLM with no production impact.
+when_not_to_use_2 = You do not need cross-model or cross-version consistency.
