@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "PatterAligned",
+  title: "PatternAligned",
   description: "Behavioral infrastructure for high-agency AI users",
 };
 

@@ -3,7 +3,7 @@ export default function Footer() {
     <footer className="bg-black border-t border-zinc-900 px-8 py-12">
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
         <div className="flex items-center gap-3">
-          <span className="text-zinc-600 text-xs tracking-[0.15em]">PatterAligned</span>
+          <span className="text-zinc-600 text-xs tracking-[0.15em]">PatternAligned</span>
         </div>
 
         <nav className="flex flex-wrap gap-8">
@@ -13,7 +13,7 @@ export default function Footer() {
         </nav>
 
         <div className="text-zinc-700 text-xs tracking-widest uppercase">
-          © {new Date().getFullYear()} PatterAligned
+          © {new Date().getFullYear()} PatternAligned
         </div>
       </div>
     </footer>

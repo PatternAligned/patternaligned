@@ -33,7 +33,7 @@ export default function CTA() {
           You notice when models change. You catch drift. You've rewritten the same system prompt seventeen times because the model updated and forgot who you are.
         </p>
         <p className="text-zinc-400 text-base font-light leading-relaxed">
-          Nova doesn't reset. Your fingerprint loads at session start — every time. Not a workaround. Infrastructure.
+          Nova doesn't reset. Your fingerprint loads at session start — every time. And constantly adapts. Not a workaround. Infrastructure.
         </p>
       </div>
     </section>

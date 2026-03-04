@@ -6,19 +6,19 @@ const values = [
     index: '01',
     title: 'What it does',
     headline: 'Maps your cognitive architecture.',
-    body: 'PatterAligned builds a precision fingerprint of how you think — not personality type, not MBTI, not a vibe. The actual mechanics: your risk tolerance, cognitive pace, communication register, and activation pattern.',
+    body: 'PatternAligned builds a precision fingerprint of how you think — not personality type, not MBTI, not a vibe. The actual mechanics: your risk tolerance, cognitive pace, communication register, and activation pattern.',
   },
   {
     index: '02',
     title: 'Why it matters',
     headline: 'Generic AI is a tax on high-agency thinkers.',
-    body: 'Every time you switch models or start a new session, you pay the calibration tax — re-explaining your context, re-establishing your tone, re-teaching your defaults. PatterAligned eliminates that. Your fingerprint persists. Nova remembers.',
+    body: 'Every time you switch models or start a new session, you pay the calibration tax — re-explaining your context, re-establishing your tone, re-teaching your defaults. PatternAligned eliminates that. Your fingerprint persists. Nova remembers.',
   },
   {
     index: '03',
     title: 'The outcome',
     headline: 'You get an intelligence that compounds.',
-    body: 'Most tools forget you. Nova doesn\'t. The longer you use PatterAligned, the sharper the signal — adjusting depth, tone, and cadence in real time based on how you actually think, not how the average user does.',
+    body: 'Most tools forget you. Nova doesn\'t. The longer you use PatternAligned, the sharper the signal — adjusting depth, tone, and cadence in real time based on how you actually think, not how the average user does.',
   },
 ];
 

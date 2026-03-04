@@ -20,7 +20,7 @@ export default function Header() {
       <div className="max-w-7xl mx-auto px-8 h-16 flex items-center justify-between">
         <Link href="/" className="flex items-center">
           <span className="text-white text-sm font-medium tracking-[0.15em]">
-            PatterAligned
+            PatternAligned
           </span>
         </Link>
 

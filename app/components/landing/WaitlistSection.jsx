@@ -62,7 +62,7 @@ export default function WaitlistSection() {
               Join our waitlist.
             </h2>
             <p className="text-zinc-300 text-sm leading-relaxed">
-              PatterAligned onboards systematically. Currently has a waitlist.
+              PatternAligned onboards systematically. Currently has a waitlist.
             </p>
           </div>
 
