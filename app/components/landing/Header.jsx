@@ -1,6 +1,5 @@
 'use client';
 import Link from 'next/link';
-import Image from 'next/image';
 import { useEffect, useState } from 'react';
 
 export default function Header() {
@@ -19,8 +18,7 @@ export default function Header() {
       }`}
     >
       <div className="max-w-7xl mx-auto px-8 h-16 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-3">
-          <Image src="/PA-512.png" alt="PatterAligned" width={80} height={80} />
+        <Link href="/" className="flex items-center">
           <span className="text-white text-sm font-medium tracking-[0.15em]">
             PatterAligned
           </span>
