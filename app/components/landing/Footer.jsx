@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import PALogo from './PALogo';
 
 export default function Footer() {
@@ -11,12 +10,6 @@ export default function Footer() {
         </div>
 
         <nav className="flex flex-wrap gap-8">
-          <Link href="/onboarding/cognitive" className="text-zinc-600 hover:text-white text-xs tracking-[0.15em] uppercase transition-colors duration-200">
-            Start Onboarding
-          </Link>
-          <Link href="/auth/signin" className="text-zinc-600 hover:text-white text-xs tracking-[0.15em] uppercase transition-colors duration-200">
-            Sign In
-          </Link>
           <a href="#how-it-works" className="text-zinc-600 hover:text-white text-xs tracking-[0.15em] uppercase transition-colors duration-200">
             How It Works
           </a>

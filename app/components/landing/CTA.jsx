@@ -1,5 +1,4 @@
 'use client';
-import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import PALogo from './PALogo';
 
@@ -34,19 +33,10 @@ export default function CTA() {
         >
           This isn't for everyone.
         </h2>
-        <p className="text-zinc-500 text-lg font-light max-w-lg mx-auto mb-12 leading-relaxed">
+        <p className="text-zinc-300 text-xl font-light max-w-xl mx-auto leading-relaxed">
           PatternAligned is for high-agency thinkers who want AI that
-          meets them — not a generic assistant pretending to.
+          meets them exactly — not a generic assistant pretending to.
         </p>
-        <Link
-          href="/onboarding/cognitive"
-          className="inline-flex items-center gap-4 bg-white text-black text-sm tracking-[0.2em] uppercase px-10 py-4 hover:bg-zinc-200 transition-colors duration-200"
-        >
-          Begin Your Fingerprint
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <path d="M3 8H13M13 8L9 4M13 8L9 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="square"/>
-          </svg>
-        </Link>
       </div>
     </section>
   );

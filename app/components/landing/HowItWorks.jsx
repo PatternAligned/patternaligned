@@ -10,7 +10,7 @@ const steps = [
   },
   {
     number: '02',
-    title: 'Pattern Games',
+    title: 'Behavioral Mapping',
     description: 'Behavioral scenarios reveal your risk tolerance, communication style, and cognitive pace.',
     detail: 'No right answers',
   },
@@ -50,10 +50,6 @@ export default function HowItWorks() {
           <span className="text-zinc-500 text-xs tracking-[0.3em] uppercase">Process</span>
         </div>
 
-        <h2 className="text-white text-4xl font-light tracking-tight mb-20 max-w-lg">
-          From pattern chaos<br />to cognitive clarity.
-        </h2>
-
         {/* Steps — desktop horizontal, mobile vertical */}
         <div className="relative">
           {/* Connecting line — desktop only */}
@@ -84,7 +80,7 @@ export default function HowItWorks() {
                 <h3 className="text-white text-base font-medium tracking-wide mb-3">
                   {step.title}
                 </h3>
-                <p className="text-zinc-500 text-sm leading-relaxed mb-4">
+                <p className="text-zinc-300 text-sm leading-relaxed mb-4">
                   {step.description}
                 </p>
                 <div className="flex items-center gap-2">

@@ -11,14 +11,14 @@ const values = [
   {
     index: '02',
     title: 'Why it matters',
-    headline: 'AI should be consistent, not random.',
-    body: 'Every new chat session, every model reset, every "as an AI" disclaimer resets your working context to zero. Your behavioral fingerprint should be durable infrastructure — not something you rebuild every Monday.',
+    headline: 'Generic AI is a tax on high-agency thinkers.',
+    body: 'Every time you switch models or start a new session, you pay the calibration tax — re-explaining your context, re-establishing your tone, re-teaching your defaults. PatternAligned eliminates that. Your fingerprint persists. Nova remembers.',
   },
   {
     index: '03',
     title: 'The outcome',
-    headline: 'Nova evolves with you, not against you.',
-    body: 'The longer you use PatternAligned, the more precisely Nova understands your cognitive state. It adjusts depth, tone, and cadence in real time — so you get leverage, not friction.',
+    headline: 'You get an intelligence that compounds.',
+    body: 'Most tools forget you. Nova doesn\'t. The longer you use PatternAligned, the sharper the signal — adjusting depth, tone, and cadence in real time based on how you actually think, not how the average user does.',
   },
 ];
 
@@ -49,7 +49,7 @@ function ValueCard({ item, delay }) {
         {/* Left: number + label */}
         <div className="lg:w-48 flex-shrink-0">
           <div className="text-zinc-700 text-xs tracking-[0.3em] uppercase mb-1">{item.index}</div>
-          <div className="text-zinc-500 text-xs tracking-[0.2em] uppercase">{item.title}</div>
+          <div className="text-zinc-400 text-xs tracking-[0.2em] uppercase">{item.title}</div>
         </div>
 
         {/* Right: content */}
@@ -57,7 +57,7 @@ function ValueCard({ item, delay }) {
           <h3 className="text-white text-2xl font-light tracking-tight mb-5 leading-snug">
             {item.headline}
           </h3>
-          <p className="text-zinc-500 text-sm leading-relaxed max-w-2xl">
+          <p className="text-zinc-300 text-sm leading-relaxed max-w-2xl">
             {item.body}
           </p>
         </div>

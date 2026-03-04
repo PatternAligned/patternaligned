@@ -42,7 +42,7 @@ export default function WaitlistSection() {
   return (
     <section
       ref={ref}
-      className="bg-black border-t border-zinc-900 py-32 px-8"
+      className="bg-black border-t border-zinc-900 py-48 px-8"
     >
       <div
         className="max-w-7xl mx-auto transition-all duration-700"
@@ -59,12 +59,14 @@ export default function WaitlistSection() {
               <span className="text-zinc-500 text-xs tracking-[0.3em] uppercase">Early Access</span>
             </div>
             <h2 className="text-white text-4xl font-light tracking-tight leading-snug mb-5">
-              Get notified<br />when we open.
+              Join our waitlist.
             </h2>
-            <p className="text-zinc-500 text-sm leading-relaxed">
+            <p className="text-zinc-300 text-sm leading-relaxed mb-4">
               PatternAligned is in closed development. Leave your email
               and you'll be first to know when early access opens.
-              No newsletters. One email.
+            </p>
+            <p className="text-zinc-500 text-xs tracking-[0.15em] uppercase">
+              First 3 users get lifetime access — no charge, ever.
             </p>
           </div>
 
@@ -124,9 +126,6 @@ export default function WaitlistSection() {
                   </p>
                 )}
 
-                <p className="text-zinc-700 text-xs tracking-wide mt-4">
-                  No spam. We'll send one email when early access opens.
-                </p>
               </form>
             )}
           </div>

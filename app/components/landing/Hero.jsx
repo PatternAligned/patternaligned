@@ -1,5 +1,4 @@
 'use client';
-import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import EmailCapture from './EmailCapture';
 
@@ -65,20 +64,11 @@ export default function Hero() {
             <EmailCapture />
           </div>
 
-          {/* CTAs */}
+          {/* CTA */}
           <div
-            className="flex flex-col sm:flex-row items-start sm:items-center gap-6 transition-all duration-1000 delay-300"
+            className="transition-all duration-1000 delay-300"
             style={{ opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(16px)' }}
           >
-            <Link
-              href="/onboarding/cognitive"
-              className="group inline-flex items-center gap-4 bg-white text-black text-sm tracking-[0.2em] uppercase px-8 py-4 hover:bg-zinc-100 transition-colors duration-200"
-            >
-              Start Onboarding
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="transition-transform duration-200 group-hover:translate-x-1">
-                <path d="M3 8H13M13 8L9 4M13 8L9 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="square"/>
-              </svg>
-            </Link>
             <a
               href="#how-it-works"
               className="text-zinc-500 hover:text-white text-xs tracking-[0.2em] uppercase transition-colors duration-200 flex items-center gap-2"
