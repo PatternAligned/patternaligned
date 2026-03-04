@@ -74,7 +74,7 @@ export default function Hero() {
 
         {/* Stats bar — always in flow, pinned to bottom */}
         <div
-          className="flex gap-8 sm:gap-12 md:gap-16 border-t border-zinc-800 py-10 transition-all duration-1000 delay-500"
+          className="flex gap-6 sm:gap-12 md:gap-16 border-t border-zinc-800 py-10 transition-all duration-1000 delay-500"
           style={{ opacity: visible ? 1 : 0 }}
         >
           {[
@@ -84,7 +84,7 @@ export default function Hero() {
           ].map(({ value, label }) => (
             <div key={label}>
               <div className="text-white text-2xl md:text-3xl font-light tracking-tight mb-1 md:mb-2">{value}</div>
-              <div className="text-zinc-400 text-[10px] sm:text-xs tracking-[0.12em] sm:tracking-[0.2em] uppercase whitespace-nowrap">{label}</div>
+              <div className="text-zinc-400 text-[10px] sm:text-xs tracking-[0.1em] sm:tracking-[0.2em] uppercase leading-tight">{label}</div>
             </div>
           ))}
         </div>
