@@ -10,7 +10,7 @@ export default function Hero() {
   }, []);
 
   return (
-    <section className="relative min-h-screen bg-black flex flex-col justify-center overflow-hidden">
+    <section className="relative min-h-screen bg-black flex flex-col overflow-hidden">
       {/* Subtle grid */}
       <div
         className="absolute inset-0 opacity-[0.03]"
@@ -24,9 +24,10 @@ export default function Hero() {
       {/* Vertical accent line */}
       <div className="absolute left-8 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-zinc-700 to-transparent hidden lg:block" />
 
-      <div className="relative max-w-7xl mx-auto px-8 pt-32 pb-16 md:pb-48">
+      {/* Main content */}
+      <div className="relative flex-1 flex flex-col max-w-7xl mx-auto w-full px-8 pt-32">
         <div
-          className="transition-all duration-1000"
+          className="flex-1 transition-all duration-1000"
           style={{ opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(24px)' }}
         >
           {/* Eyebrow */}
@@ -71,9 +72,9 @@ export default function Hero() {
           </div>
         </div>
 
-        {/* Stats bar */}
+        {/* Stats bar — always in flow, pinned to bottom */}
         <div
-          className="mt-16 md:absolute md:bottom-16 md:left-8 md:right-8 flex gap-8 sm:gap-12 md:gap-16 border-t border-zinc-800 pt-8 md:pt-10 transition-all duration-1000 delay-500"
+          className="flex gap-8 sm:gap-12 md:gap-16 border-t border-zinc-800 py-10 transition-all duration-1000 delay-500"
           style={{ opacity: visible ? 1 : 0 }}
         >
           {[
@@ -81,9 +82,9 @@ export default function Hero() {
             { value: '∞', label: 'Adaptive Sessions' },
             { value: '1', label: 'Version of You' },
           ].map(({ value, label }) => (
-            <div key={label} className="min-w-0">
+            <div key={label}>
               <div className="text-white text-2xl md:text-3xl font-light tracking-tight mb-1 md:mb-2">{value}</div>
-              <div className="text-zinc-400 text-[10px] md:text-xs tracking-[0.12em] md:tracking-[0.2em] uppercase whitespace-nowrap">{label}</div>
+              <div className="text-zinc-400 text-[10px] sm:text-xs tracking-[0.12em] sm:tracking-[0.2em] uppercase whitespace-nowrap">{label}</div>
             </div>
           ))}
         </div>
