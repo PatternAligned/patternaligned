@@ -3,6 +3,7 @@
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import ReactMarkdown from 'react-markdown';
 
 export default function ChatPage() {
   const { data: session, status } = useSession();
@@ -108,7 +109,7 @@ export default function ChatPage() {
         <p className="text-silver text-sm">
           Personalized by your behavioral profile
         </p>
-        {fingerprint && (
+        {fingerprint && fingerprint.confidence != null && !isNaN(fingerprint.confidence) && (
           <p className="text-xs text-white/50 mt-2">
             Confidence: {(fingerprint.confidence * 100).toFixed(0)}%
           </p>
@@ -140,7 +141,13 @@ export default function ChatPage() {
                     : 'bg-white/5 text-white/90'
                 }`}
               >
-                <p className="text-sm">{msg.content}</p>
+                {msg.role === 'assistant' ? (
+                  <div className="text-sm prose prose-invert prose-sm max-w-none">
+                    <ReactMarkdown>{msg.content}</ReactMarkdown>
+                  </div>
+                ) : (
+                  <p className="text-sm">{msg.content}</p>
+                )}
               </div>
             </div>
           ))
