@@ -11,6 +11,18 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false },
 });
 
+async function ensureTable() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS behavioral_events (
+      id SERIAL PRIMARY KEY,
+      user_id TEXT,
+      event_type TEXT NOT NULL,
+      metadata JSONB DEFAULT '{}',
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `);
+}
+
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -22,6 +34,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'event_type is required' }, { status: 400 });
     }
 
+    await ensureTable();
     await pool.query(
       `INSERT INTO behavioral_events (user_id, event_type, metadata, created_at)
        VALUES ($1, $2, $3, NOW())`,
