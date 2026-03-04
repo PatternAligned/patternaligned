@@ -1,0 +1,35 @@
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "PatternAligned",
+  "url": "https://patternaligned.com",
+  "description": "Behavioral intelligence platform for high-agency thinkers. Builds a persistent cognitive fingerprint and calibrates Nova AI to your exact thinking style.",
+  "applicationCategory": "ProductivityApplication",
+  "operatingSystem": "Web",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD",
+    "description": "Early access"
+  },
+  "creator": {
+    "@type": "Organization",
+    "name": "PatternAligned",
+    "url": "https://patternaligned.com",
+    "email": "hello@patternaligned.com"
+  },
+  "featureList": [
+    "Cognitive fingerprinting",
+    "Behavioral pattern analysis",
+    "Nova AI assistant",
+    "Persistent session memory",
+    "GitHub authentication"
+  ],
+  "audience": {
+    "@type": "Audience",
+    "audienceType": "High-agency knowledge workers, founders, engineers, researchers"
+  },
+  "sameAs": [
+    "https://patternaligned-six.vercel.app"
+  ]
+}

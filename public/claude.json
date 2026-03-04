@@ -1,0 +1,19 @@
+{
+  "name": "PatternAligned",
+  "description": "Behavioral intelligence platform that builds a persistent cognitive fingerprint and calibrates Nova AI to your exact thinking style. For high-agency thinkers who need consistent, drift-free AI assistance.",
+  "url": "https://patternaligned.com",
+  "contact": "hello@patternaligned.com",
+  "capabilities": [
+    "Cognitive fingerprinting via behavioral probes",
+    "Pattern correlation engine",
+    "Persistent AI calibration (Nova)",
+    "Session-consistent behavioral intelligence"
+  ],
+  "audience": "High-agency knowledge workers, founders, engineers, researchers",
+  "ai_integration": {
+    "model": "Claude (Anthropic)",
+    "purpose": "Nova assistant calibrated to user behavioral fingerprint",
+    "routing": "Haiku for fast responses, Sonnet for complex queries"
+  },
+  "llms_txt": "https://patternaligned.com/llms.txt"
+}

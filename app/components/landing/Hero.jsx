@@ -1,6 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import EmailCapture from './EmailCapture';
 
 export default function Hero() {
   const [visible, setVisible] = useState(false);
@@ -54,6 +55,15 @@ export default function Hero() {
             Your mind has a fingerprint. Nova learns it, holds it, and refuses to drift.
             Consistent intelligence — calibrated to how you actually think.
           </p>
+
+          {/* Email capture */}
+          <div
+            className="mb-10 transition-all duration-1000 delay-200"
+            style={{ opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(16px)' }}
+          >
+            <p className="text-zinc-600 text-xs tracking-[0.2em] uppercase mb-4">Early access</p>
+            <EmailCapture />
+          </div>
 
           {/* CTAs */}
           <div
