@@ -20,8 +20,8 @@ export default function Header() {
     >
       <div className="max-w-7xl mx-auto px-8 h-16 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-3">
-          <Image src="/PA-512.png" alt="PatterAligned" width={32} height={32} />
-          <span className="text-white text-sm font-medium tracking-[0.15em] uppercase">
+          <Image src="/PA-512.png" alt="PatterAligned" width={80} height={80} />
+          <span className="text-white text-sm font-medium tracking-[0.15em]">
             PatterAligned
           </span>
         </Link>

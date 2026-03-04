@@ -25,7 +25,7 @@ export default function CTA() {
         style={{ opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(24px)' }}
       >
         <div className="flex justify-center mb-12">
-          <Image src="/PA-512.png" alt="PatterAligned" width={56} height={56} />
+          <Image src="/PA-512.png" alt="PatterAligned" width={60} height={60} />
         </div>
         <h2
           className="text-white font-light tracking-tight mb-10"
@@ -33,12 +33,8 @@ export default function CTA() {
         >
           This isn't for everyone.
         </h2>
-        <p className="text-zinc-200 text-xl font-light leading-relaxed mb-6">
-          Nova learns your style, your patterns, your workflow.
-          Every conversation refines her. She doesn't reset. She compounds.
-        </p>
-        <p className="text-zinc-400 text-base font-light leading-relaxed">
-          Not a workaround. Infrastructure.
+        <p className="text-zinc-200 text-xl font-light leading-relaxed">
+          PatterAligned is for high-agency thinkers who want AI that meets them exactly — not a generic assistant pretending to.
         </p>
       </div>
     </section>

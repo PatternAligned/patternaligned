@@ -63,7 +63,6 @@ export default function WaitlistSection() {
             </h2>
             <p className="text-zinc-300 text-sm leading-relaxed">
               PatterAligned onboards systematically. Currently has a waitlist.
-              First 3 users get lifetime access — no charge, ever.
             </p>
           </div>
 
