@@ -54,10 +54,6 @@ export default function WaitlistSection() {
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-16">
           {/* Left: copy */}
           <div className="max-w-lg">
-            <div className="flex items-center gap-3 mb-8">
-              <div className="w-8 h-px bg-zinc-700" />
-              <span className="text-zinc-500 text-xs tracking-[0.3em] uppercase">Early Access</span>
-            </div>
             <h2 className="text-white text-4xl font-light tracking-tight leading-snug mb-5">
               Join our waitlist.
             </h2>
