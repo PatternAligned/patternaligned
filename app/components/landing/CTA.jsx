@@ -1,6 +1,6 @@
 'use client';
+import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
-import PALogo from './PALogo';
 
 export default function CTA() {
   const ref = useRef(null);
@@ -25,7 +25,7 @@ export default function CTA() {
         style={{ opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(24px)' }}
       >
         <div className="flex justify-center mb-12">
-          <PALogo size={44} />
+          <Image src="/PA-512.png" alt="PatterAligned" width={56} height={56} />
         </div>
         <h2
           className="text-white font-light tracking-tight mb-10"
@@ -33,12 +33,11 @@ export default function CTA() {
         >
           This isn't for everyone.
         </h2>
-        <p className="text-zinc-200 text-lg font-light leading-relaxed mb-6">
-          You notice when models change. You catch drift. You've rewritten the same
-          system prompt seventeen times because the model updated and forgot who you are.
+        <p className="text-zinc-200 text-xl font-light leading-relaxed mb-6">
+          Nova learns your style, your patterns, your workflow.
+          Every conversation refines her. She doesn't reset. She compounds.
         </p>
         <p className="text-zinc-400 text-base font-light leading-relaxed">
-          Nova doesn't reset. Your fingerprint loads at session start — every time.
           Not a workaround. Infrastructure.
         </p>
       </div>

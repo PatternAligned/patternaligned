@@ -40,7 +40,7 @@ export default function Hero() {
           {/* Headline */}
           <h1 className="text-white font-light leading-[1.1] tracking-[-0.02em] mb-10"
             style={{ fontSize: 'clamp(2.8rem, 7vw, 6rem)' }}>
-            For pattern thinkers<br />
+            For high agency users<br />
             who need<br />
             <span className="italic text-zinc-300">cognitive stability.</span>
           </h1>

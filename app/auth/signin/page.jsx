@@ -69,7 +69,7 @@ export default function SignIn() {
 
       <div className="signin-card">
         <div className="signin-header">
-          <h1 className="signin-title">PatternAligned</h1>
+          <h1 className="signin-title">PatterAligned</h1>
           <p className="signin-subtitle">Sign in to your account</p>
         </div>
 
