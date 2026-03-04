@@ -12,7 +12,10 @@ const pool = new Pool({
 });
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: 'https://patternaligned-six.vercel.app',
+  credentials: true
+}));
 app.use(express.json());
 
 // Simplified auth - check for user email in header
