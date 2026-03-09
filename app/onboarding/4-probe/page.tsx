@@ -76,12 +76,9 @@ export default function FourProbeOnboarding() {
     setLoading(true);
 
     try {
-      const response = await fetch('https://patternaligned-api.onrender.com/behavioral/4-probe', {
+      const response = await fetch('/api/onboarding/4-probe', {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'x-user-email': session?.user?.email || ''
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(answers),
       });
 
@@ -89,8 +86,7 @@ export default function FourProbeOnboarding() {
         throw new Error('Failed to save 4-probe answers');
       }
 
-      // Redirect to results page
-      router.push('/onboarding/4-probe/results');
+      router.push('/onboarding/cognitive');
     } catch (error) {
       console.error('Error submitting 4-probe:', error);
       setLoading(false);
