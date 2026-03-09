@@ -59,11 +59,14 @@ export default function FourProbeOnboarding() {
     setLoading(true);
 
     try {
-      const response = await fetch('/api/onboarding/4-probe', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(answers),
-      });
+      const response = await fetch('/behavioral/4-probe', {
+  method: 'POST',
+  headers: { 
+    'Content-Type': 'application/json',
+    'x-user-email': session?.user?.email || ''
+  },
+  body: JSON.stringify(answers),
+});
 
       if (!response.ok) {
         throw new Error('Failed to save 4-probe answers');
