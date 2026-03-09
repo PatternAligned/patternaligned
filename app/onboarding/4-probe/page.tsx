@@ -76,7 +76,7 @@ export default function FourProbeOnboarding() {
     setLoading(true);
 
     try {
-      const response = await fetch('/behavioral/4-probe', {
+      const response = await fetch('https://patternaligned-api.onrender.com/behavioral/4-probe', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
