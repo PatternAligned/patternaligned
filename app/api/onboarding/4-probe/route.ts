@@ -42,13 +42,12 @@ export async function POST(request: NextRequest) {
       `${process.env.NEXT_PUBLIC_RENDER_BACKEND_URL}/behavioral/4-probe`,
       {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-email': email,
+        },
         body: JSON.stringify({
-          email,
-          compression,
-          friction,
-          execution,
-          contradiction,
+          answers: { compression, friction, execution, contradiction },
         }),
       }
     );
