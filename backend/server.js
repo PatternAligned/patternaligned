@@ -14,7 +14,7 @@ const pool = new Pool({
 
 // Middleware
 app.use(cors({
-  origin: 'https://patternaligned-six.vercel.app',
+  origin: 'https://app.patternaligned.com',
   credentials: true
 }));
 app.use(express.json());
