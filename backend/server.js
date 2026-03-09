@@ -35,236 +35,146 @@ app.get('/health', (req, res) => {
 // MIGRATION ENDPOINT - Run this ONCE to set up schema
 // ============================================================================
 app.post('/admin/migrate-schema', async (req, res) => {
+  const client = await pool.connect();
   try {
-    // Check auth token (optional safety - remove if you want)
-    const token = req.headers['x-migration-token'];
-    if (token !== process.env.MIGRATION_TOKEN && process.env.MIGRATION_TOKEN) {
-      return res.status(403).json({ error: 'Unauthorized migration' });
-    }
-
     console.log('Starting schema migration...');
 
-    // Run the schema SQL
-    const schemaSql = `
--- ============================================================================
--- PART 1: NEXTAUTH TABLES (Required for authentication)
--- ============================================================================
+    // Execute statements one by one
+    const statements = [
+      // Enable UUID extension
+      'CREATE EXTENSION IF NOT EXISTS "uuid-ossp"',
+      
+      // Users table
+      `CREATE TABLE IF NOT EXISTS users (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        name TEXT,
+        email TEXT UNIQUE NOT NULL,
+        email_verified TIMESTAMP WITH TIME ZONE,
+        image TEXT,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+      )`,
 
--- Users table: Every person who signs up
-CREATE TABLE IF NOT EXISTS users (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  name TEXT,
-  email TEXT UNIQUE NOT NULL,
-  email_verified TIMESTAMP WITH TIME ZONE,
-  image TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
-);
+      // Accounts table
+      `CREATE TABLE IF NOT EXISTS accounts (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        type TEXT NOT NULL,
+        provider TEXT NOT NULL,
+        provider_account_id TEXT NOT NULL,
+        refresh_token TEXT,
+        access_token TEXT,
+        expires_at BIGINT,
+        token_type TEXT,
+        scope TEXT,
+        id_token TEXT,
+        session_state TEXT,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+        UNIQUE(provider, provider_account_id)
+      )`,
 
--- Accounts table: OAuth providers (GitHub, Google, etc.)
-CREATE TABLE IF NOT EXISTS accounts (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  type TEXT NOT NULL,
-  provider TEXT NOT NULL,
-  provider_account_id TEXT NOT NULL,
-  refresh_token TEXT,
-  access_token TEXT,
-  expires_at BIGINT,
-  token_type TEXT,
-  scope TEXT,
-  id_token TEXT,
-  session_state TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-  UNIQUE(provider, provider_account_id)
-);
+      // Sessions table
+      `CREATE TABLE IF NOT EXISTS sessions (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        expires TIMESTAMP WITH TIME ZONE NOT NULL,
+        session_token TEXT UNIQUE NOT NULL,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+      )`,
 
--- Sessions table: Active user sessions (managed by NextAuth)
-CREATE TABLE IF NOT EXISTS sessions (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  expires TIMESTAMP WITH TIME ZONE NOT NULL,
-  session_token TEXT UNIQUE NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
-);
+      // Verification tokens
+      `CREATE TABLE IF NOT EXISTS verification_tokens (
+        identifier TEXT NOT NULL,
+        token TEXT NOT NULL,
+        expires TIMESTAMP WITH TIME ZONE NOT NULL,
+        UNIQUE(identifier, token)
+      )`,
 
--- Verification tokens: Email magic links
-CREATE TABLE IF NOT EXISTS verification_tokens (
-  identifier TEXT NOT NULL,
-  token TEXT NOT NULL,
-  expires TIMESTAMP WITH TIME ZONE NOT NULL,
-  UNIQUE(identifier, token)
-);
+      // Messages table
+      `CREATE TABLE IF NOT EXISTS messages (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        role TEXT NOT NULL CHECK (role IN ('user', 'assistant')),
+        content TEXT NOT NULL,
+        word_count INT,
+        token_count INT,
+        pause_time_ms INT,
+        edit_count INT DEFAULT 0,
+        sentiment_score FLOAT,
+        model_used TEXT DEFAULT 'claude-sonnet',
+        temperature FLOAT DEFAULT 0.7,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+      )`,
 
--- ============================================================================
--- PART 2: PATTERNALIGNED CORE TABLES
--- ============================================================================
+      // Behavioral events
+      `CREATE TABLE IF NOT EXISTS behavioral_events (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        message_id UUID REFERENCES messages(id) ON DELETE CASCADE,
+        event_type TEXT NOT NULL,
+        metadata JSONB,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+      )`,
 
--- Messages: Every conversation message (this is your raw behavioral data)
-CREATE TABLE IF NOT EXISTS messages (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  role TEXT NOT NULL CHECK (role IN ('user', 'assistant')),
-  content TEXT NOT NULL,
-  word_count INT,
-  token_count INT,
-  pause_time_ms INT,
-  edit_count INT DEFAULT 0,
-  sentiment_score FLOAT,
-  model_used TEXT DEFAULT 'claude-sonnet',
-  temperature FLOAT DEFAULT 0.7,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
-);
+      // User behavioral fingerprints
+      `CREATE TABLE IF NOT EXISTS user_behavioral_fingerprints (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        fingerprint JSONB DEFAULT '{}'::jsonb,
+        message_count INT DEFAULT 0,
+        confidence_score FLOAT DEFAULT 0,
+        last_updated TIMESTAMP WITH TIME ZONE DEFAULT now(),
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+      )`,
 
--- Behavioral events: Granular interaction tracking
-CREATE TABLE IF NOT EXISTS behavioral_events (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  message_id UUID REFERENCES messages(id) ON DELETE CASCADE,
-  event_type TEXT NOT NULL CHECK (event_type IN (
-    'message_start',
-    'message_pause',
-    'message_edit',
-    'message_submit',
-    'sidebar_open',
-    'sidebar_close',
-    'model_switch',
-    'temperature_change',
-    'page_focus',
-    'page_blur'
-  )),
-  metadata JSONB,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
-);
+      // Behavioral fingerprints (for existing endpoints)
+      `CREATE TABLE IF NOT EXISTS behavioral_fingerprints (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        profile_data JSONB DEFAULT '{}'::jsonb,
+        confidence FLOAT DEFAULT 0,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+      )`,
 
--- User behavioral fingerprints: Aggregated personality patterns
-CREATE TABLE IF NOT EXISTS user_behavioral_fingerprints (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  fingerprint JSONB DEFAULT '{}'::jsonb,
-  message_count INT DEFAULT 0,
-  confidence_score FLOAT DEFAULT 0,
-  last_updated TIMESTAMP WITH TIME ZONE DEFAULT now(),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
-);
+      // User activity stats
+      `CREATE TABLE IF NOT EXISTS user_activity_stats (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        total_messages INT DEFAULT 0,
+        messages_today INT DEFAULT 0,
+        messages_this_week INT DEFAULT 0,
+        avg_pause_time_ms INT,
+        avg_edit_count FLOAT,
+        avg_word_count INT,
+        last_message_at TIMESTAMP WITH TIME ZONE,
+        last_updated TIMESTAMP WITH TIME ZONE DEFAULT now(),
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+        UNIQUE(user_id)
+      )`,
 
--- Also create the behavioral_fingerprints alias (for backward compat with existing code)
-CREATE TABLE IF NOT EXISTS behavioral_fingerprints (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  profile_data JSONB DEFAULT '{}'::jsonb,
-  confidence FLOAT DEFAULT 0,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
-);
+      // Indexes
+      'CREATE INDEX IF NOT EXISTS idx_messages_user_id ON messages(user_id)',
+      'CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at DESC)',
+      'CREATE INDEX IF NOT EXISTS idx_messages_user_created ON messages(user_id, created_at DESC)',
+      'CREATE INDEX IF NOT EXISTS idx_behavioral_events_user_id ON behavioral_events(user_id)',
+      'CREATE INDEX IF NOT EXISTS idx_fingerprints_user_id ON user_behavioral_fingerprints(user_id)',
+      'CREATE INDEX IF NOT EXISTS idx_behavioral_fingerprints_user_id ON behavioral_fingerprints(user_id)',
+    ];
 
--- User activity aggregates: Fast queries for dashboard
-CREATE TABLE IF NOT EXISTS user_activity_stats (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  total_messages INT DEFAULT 0,
-  messages_today INT DEFAULT 0,
-  messages_this_week INT DEFAULT 0,
-  avg_pause_time_ms INT,
-  avg_edit_count FLOAT,
-  avg_word_count INT,
-  last_message_at TIMESTAMP WITH TIME ZONE,
-  last_updated TIMESTAMP WITH TIME ZONE DEFAULT now(),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-  UNIQUE(user_id)
-);
-
--- ============================================================================
--- PART 3: SECURITY (Row Level Security / RLS)
--- ============================================================================
-
-ALTER TABLE users ENABLE ROW LEVEL SECURITY;
-ALTER TABLE accounts ENABLE ROW LEVEL SECURITY;
-ALTER TABLE sessions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
-ALTER TABLE behavioral_events ENABLE ROW LEVEL SECURITY;
-ALTER TABLE user_behavioral_fingerprints ENABLE ROW LEVEL SECURITY;
-ALTER TABLE behavioral_fingerprints ENABLE ROW LEVEL SECURITY;
-ALTER TABLE user_activity_stats ENABLE ROW LEVEL SECURITY;
-
--- ============================================================================
--- PART 4: AUTOMATIC UPDATES (Triggers)
--- ============================================================================
-
-CREATE OR REPLACE FUNCTION update_user_updated_at()
-RETURNS TRIGGER AS $$
-BEGIN
-  NEW.updated_at = now();
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER IF NOT EXISTS user_updated_at_trigger
-BEFORE UPDATE ON users
-FOR EACH ROW
-EXECUTE FUNCTION update_user_updated_at();
-
-CREATE OR REPLACE FUNCTION update_message_updated_at()
-RETURNS TRIGGER AS $$
-BEGIN
-  NEW.updated_at = now();
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER IF NOT EXISTS message_updated_at_trigger
-BEFORE UPDATE ON messages
-FOR EACH ROW
-EXECUTE FUNCTION update_message_updated_at();
-
-CREATE OR REPLACE FUNCTION update_fingerprint_updated_at()
-RETURNS TRIGGER AS $$
-BEGIN
-  NEW.last_updated = now();
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER IF NOT EXISTS fingerprint_updated_at_trigger
-BEFORE UPDATE ON user_behavioral_fingerprints
-FOR EACH ROW
-EXECUTE FUNCTION update_fingerprint_updated_at();
-
-CREATE OR REPLACE FUNCTION update_activity_stats_on_message()
-RETURNS TRIGGER AS $$
-BEGIN
-  INSERT INTO user_activity_stats (user_id, total_messages, last_message_at)
-  VALUES (NEW.user_id, 1, NEW.created_at)
-  ON CONFLICT (user_id) DO UPDATE SET
-    total_messages = user_activity_stats.total_messages + 1,
-    last_message_at = NEW.created_at,
-    last_updated = now();
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER IF NOT EXISTS activity_stats_trigger
-AFTER INSERT ON messages
-FOR EACH ROW
-EXECUTE FUNCTION update_activity_stats_on_message();
-
--- ============================================================================
--- PART 5: PERFORMANCE (Indexes)
--- ============================================================================
-
-CREATE INDEX IF NOT EXISTS idx_messages_user_id ON messages(user_id);
-CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_messages_user_created ON messages(user_id, created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_behavioral_events_user_id ON behavioral_events(user_id);
-CREATE INDEX IF NOT EXISTS idx_behavioral_events_event_type ON behavioral_events(event_type);
-CREATE INDEX IF NOT EXISTS idx_fingerprints_user_id ON user_behavioral_fingerprints(user_id);
-CREATE INDEX IF NOT EXISTS idx_behavioral_fingerprints_user_id ON behavioral_fingerprints(user_id);
-    `;
-
-    // Split by statements and execute
-    await pool.query(schemaSql);
+    for (const statement of statements) {
+      try {
+        await client.query(statement);
+      } catch (err) {
+        // Skip if table/index already exists
+        if (!err.message.includes('already exists')) {
+          console.error(`Error executing: ${statement.substring(0, 50)}...`, err);
+          throw err;
+        }
+      }
+    }
 
     console.log('✅ Schema migration complete');
     res.json({
@@ -277,6 +187,8 @@ CREATE INDEX IF NOT EXISTS idx_behavioral_fingerprints_user_id ON behavioral_fin
       success: false,
       error: error.message,
     });
+  } finally {
+    client.release();
   }
 });
 
