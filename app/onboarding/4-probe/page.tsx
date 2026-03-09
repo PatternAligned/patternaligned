@@ -1,12 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 
 export default function FourProbeOnboarding() {
   const router = useRouter();
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const [loading, setLoading] = useState(false);
   const [answers, setAnswers] = useState({
     compression: '',
@@ -14,6 +14,23 @@ export default function FourProbeOnboarding() {
     execution: '',
     contradiction: '',
   });
+
+  // Check auth - redirect to login if not authenticated
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/auth/signin');
+    }
+  }, [status, router]);
+
+  // Show loading while checking auth
+  if (status === 'loading') {
+    return <div className="min-h-screen bg-black text-white flex items-center justify-center">Loading...</div>;
+  }
+
+  // Don't render if no session
+  if (!session) {
+    return null;
+  }
 
   const probes = [
     {
@@ -60,19 +77,20 @@ export default function FourProbeOnboarding() {
 
     try {
       const response = await fetch('/behavioral/4-probe', {
-  method: 'POST',
-  headers: { 
-    'Content-Type': 'application/json',
-    'x-user-email': session?.user?.email || ''
-  },
-  body: JSON.stringify(answers),
-});
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-user-email': session?.user?.email || ''
+        },
+        body: JSON.stringify(answers),
+      });
 
       if (!response.ok) {
         throw new Error('Failed to save 4-probe answers');
       }
 
-      router.push('/onboarding/games');
+      // Redirect to results page
+      router.push('/onboarding/4-probe/results');
     } catch (error) {
       console.error('Error submitting 4-probe:', error);
       setLoading(false);
