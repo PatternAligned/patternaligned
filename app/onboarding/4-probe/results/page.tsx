@@ -1,11 +1,5 @@
 import { requireAuth } from '@/lib/auth-guard';
-import { Pool } from 'pg';
 import Link from 'next/link';
-
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false },
-});
 
 const LABELS: Record<string, Record<string, string>> = {
   compression: {
@@ -33,24 +27,37 @@ interface ProbeAnswers {
   contradiction: string;
 }
 
-async function getLatest4ProbeAnswers(userId: string): Promise<ProbeAnswers | null> {
-  const { rows } = await pool.query(
-    `SELECT metadata FROM behavioral_events
-     WHERE user_id = $1 AND event_type = '4_probe_completed'
-     ORDER BY created_at DESC
-     LIMIT 1`,
-    [userId]
-  );
+async function getLatest4ProbeAnswers(email: string): Promise<ProbeAnswers | null> {
+  try {
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_RENDER_BACKEND_URL}/behavioral/4-probe/latest?email=${encodeURIComponent(email)}`,
+      { cache: 'no-store' }
+    );
 
-  if (!rows.length) return null;
-  return rows[0].metadata as ProbeAnswers;
+    if (!response.ok) return null;
+    const data = await response.json();
+    return data.answers || null;
+  } catch (error) {
+    console.error('Failed to fetch 4-probe answers:', error);
+    return null;
+  }
 }
 
 export default async function FourProbeResults() {
   const session = await requireAuth();
-  const userId = (session.user as any).id as string;
+  const email = session.user?.email;
 
-  const answers = await getLatest4ProbeAnswers(userId);
+  if (!email) {
+    return (
+      <div className="min-h-screen bg-black text-white flex items-center justify-center p-8">
+        <div className="max-w-lg text-center">
+          <p className="text-zinc-400 mb-6">Authentication error. Please sign in again.</p>
+        </div>
+      </div>
+    );
+  }
+
+  const answers = await getLatest4ProbeAnswers(email);
 
   if (!answers) {
     return (
@@ -69,31 +76,26 @@ export default async function FourProbeResults() {
   }
 
   const probes: { key: keyof ProbeAnswers; label: string }[] = [
-    { key: 'compression',   label: 'Compression' },
-    { key: 'friction',      label: 'Friction' },
-    { key: 'execution',     label: 'Execution' },
+    { key: 'compression', label: 'Compression' },
+    { key: 'friction', label: 'Friction' },
+    { key: 'execution', label: 'Execution' },
     { key: 'contradiction', label: 'Contradiction' },
   ];
 
   return (
     <div className="min-h-screen bg-black text-white p-8">
       <div className="max-w-2xl mx-auto">
-
-        {/* Header */}
         <div className="mb-16">
           <div className="flex items-center gap-3 mb-8">
             <div className="w-8 h-px bg-zinc-700" />
             <span className="text-zinc-500 text-xs tracking-[0.3em] uppercase">Behavioral Snapshot</span>
           </div>
-          <h1 className="text-4xl font-light tracking-tight mb-4">
-            How you think.
-          </h1>
+          <h1 className="text-4xl font-light tracking-tight mb-4">How you think.</h1>
           <p className="text-zinc-400 text-sm leading-relaxed">
             Four probes. One fingerprint. Nova has this loaded.
           </p>
         </div>
 
-        {/* Probe results */}
         <div className="space-y-0">
           {probes.map(({ key, label }, idx) => {
             const value = answers[key];
@@ -104,7 +106,6 @@ export default async function FourProbeResults() {
                 key={key}
                 className="border-t border-zinc-800 py-8 flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-12"
               >
-                {/* Left: number + label */}
                 <div className="sm:w-40 flex-shrink-0">
                   <div className="text-zinc-700 text-xs tracking-[0.3em] uppercase mb-1">
                     0{idx + 1}
@@ -114,7 +115,6 @@ export default async function FourProbeResults() {
                   </div>
                 </div>
 
-                {/* Right: answer + description */}
                 <div className="flex-1">
                   <div className="text-white text-sm font-medium tracking-wide mb-2 capitalize">
                     {value}
@@ -126,12 +126,9 @@ export default async function FourProbeResults() {
               </div>
             );
           })}
-
-          {/* Bottom border */}
           <div className="border-t border-zinc-800" />
         </div>
 
-        {/* Continue */}
         <div className="mt-12 flex items-center gap-8">
           <Link
             href="/onboarding/games"
@@ -149,7 +146,6 @@ export default async function FourProbeResults() {
             Retake
           </Link>
         </div>
-
       </div>
     </div>
   );
