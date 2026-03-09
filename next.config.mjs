@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  appDir: true,
   async rewrites() {
     return {
       fallback: [
@@ -11,5 +12,4 @@ const nextConfig = {
     };
   },
 };
-
 export default nextConfig;
