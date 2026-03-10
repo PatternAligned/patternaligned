@@ -178,26 +178,12 @@ app.post('/admin/migrate-schema', async (req, res) => {
       'ALTER TABLE interview_sessions ALTER COLUMN id SET DEFAULT gen_random_uuid()',
 
       // Add missing columns to interview_sessions if they don't exist
-      `DO $$ BEGIN
-        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='interview_sessions' AND column_name='probe_index') THEN
-          ALTER TABLE interview_sessions ADD COLUMN probe_index INT DEFAULT 0;
-        END IF;
-        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='interview_sessions' AND column_name='answers') THEN
-          ALTER TABLE interview_sessions ADD COLUMN answers JSONB DEFAULT '{}'::jsonb;
-        END IF;
-        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='interview_sessions' AND column_name='status') THEN
-          ALTER TABLE interview_sessions ADD COLUMN status TEXT DEFAULT 'in_progress' CHECK (status IN ('in_progress', 'completed'));
-        END IF;
-        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='interview_sessions' AND column_name='claude_insights') THEN
-          ALTER TABLE interview_sessions ADD COLUMN claude_insights JSONB;
-        END IF;
-        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='interview_sessions' AND column_name='confidence_score') THEN
-          ALTER TABLE interview_sessions ADD COLUMN confidence_score FLOAT;
-        END IF;
-        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='interview_sessions' AND column_name='updated_at') THEN
-          ALTER TABLE interview_sessions ADD COLUMN updated_at TIMESTAMP WITH TIME ZONE DEFAULT now();
-        END IF;
-      END $$`,
+      'ALTER TABLE interview_sessions ADD COLUMN IF NOT EXISTS probe_index INT DEFAULT 0',
+      'ALTER TABLE interview_sessions ADD COLUMN IF NOT EXISTS answers JSONB DEFAULT \'{}\'::jsonb',
+      'ALTER TABLE interview_sessions ADD COLUMN IF NOT EXISTS status TEXT DEFAULT \'in_progress\'',
+      'ALTER TABLE interview_sessions ADD COLUMN IF NOT EXISTS claude_insights JSONB',
+      'ALTER TABLE interview_sessions ADD COLUMN IF NOT EXISTS confidence_score FLOAT',
+      'ALTER TABLE interview_sessions ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()',
     ];
 
     for (const statement of statements) {
