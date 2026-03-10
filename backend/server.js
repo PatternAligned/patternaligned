@@ -391,13 +391,14 @@ app.post('/behavioral/interview/start', getUser, async (req, res) => {
   try {
     const userEmail = req.user.email;
 
-    const userResult = await pool.query(
-      `INSERT INTO users (email) VALUES ($1)
-       ON CONFLICT (email) DO UPDATE SET updated_at = now()
-       RETURNING id`,
-      [userEmail]
-    );
-    const userId = userResult.rows[0].id;
+    const existing = await pool.query('SELECT id FROM users WHERE email = $1', [userEmail]);
+    let userId;
+    if (existing.rows[0]) {
+      userId = existing.rows[0].id;
+    } else {
+      const newUser = await pool.query('INSERT INTO users (email) VALUES ($1) RETURNING id', [userEmail]);
+      userId = newUser.rows[0].id;
+    }
 
     const result = await pool.query(
       `INSERT INTO interview_sessions (user_id, probe_index, answers, status)
