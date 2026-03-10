@@ -350,6 +350,139 @@ app.get('/behavioral/4-probe/latest', getUser, async (req, res) => {
   }
 });
 
+// ============================================================================
+// BEHAVIORAL INTERVIEW ENDPOINTS
+// ============================================================================
+
+const INTERVIEW_PROBES = [
+  {
+    id: 'compression',
+    question: 'How do you prefer to receive information? Do you like detailed, layered explanations with full context, or do you prefer concise, direct answers that cut to the point?',
+  },
+  {
+    id: 'friction',
+    question: 'When you hit a wall or obstacle — whether in work, learning, or problem-solving — what\'s your instinct? Do you push through it directly, or do you look for ways around it?',
+  },
+  {
+    id: 'execution',
+    question: 'Once you have an idea you believe in, how do you typically move forward? Do you dive in and figure it out as you go, or do you plan and validate before acting?',
+  },
+  {
+    id: 'contradiction',
+    question: 'When you encounter two conflicting pieces of information that both seem valid, what do you tend to do — try to resolve it and find which is true, or hold both as possibilities and sit with the tension?',
+  },
+];
+
+// In-memory session store (single Render instance is fine)
+const interviewSessions = new Map();
+
+app.post('/behavioral/interview/start', getUser, (req, res) => {
+  const sessionId = require('crypto').randomUUID();
+  interviewSessions.set(sessionId, {
+    email: req.user.email,
+    probeIndex: 0,
+    answers: {},
+    startedAt: Date.now(),
+  });
+
+  const firstProbe = INTERVIEW_PROBES[0];
+  res.json({
+    sessionId,
+    probe: firstProbe.id,
+    question: firstProbe.question,
+  });
+});
+
+app.post('/behavioral/interview/answer', getUser, (req, res) => {
+  const { sessionId, answer } = req.body;
+
+  if (!sessionId || !answer) {
+    return res.status(400).json({ error: 'sessionId and answer are required' });
+  }
+
+  const session = interviewSessions.get(sessionId);
+  if (!session) {
+    return res.status(404).json({ error: 'Session not found' });
+  }
+
+  const currentProbe = INTERVIEW_PROBES[session.probeIndex];
+  session.answers[currentProbe.id] = answer;
+  session.probeIndex += 1;
+
+  const nextProbe = INTERVIEW_PROBES[session.probeIndex];
+  if (!nextProbe) {
+    return res.json({ isComplete: true });
+  }
+
+  res.json({
+    isComplete: false,
+    nextProbe: nextProbe.id,
+    nextQuestion: nextProbe.question,
+  });
+});
+
+app.post('/behavioral/interview/complete', getUser, async (req, res) => {
+  const { sessionId } = req.body;
+
+  if (!sessionId) {
+    return res.status(400).json({ error: 'sessionId is required' });
+  }
+
+  const session = interviewSessions.get(sessionId);
+  if (!session) {
+    return res.status(404).json({ error: 'Session not found' });
+  }
+
+  const { answers, email } = session;
+
+  try {
+    const Anthropic = require('@anthropic-ai/sdk');
+    const client = new Anthropic({ apiKey: process.env.CLAUDE_API_KEY });
+
+    const prompt = `You are analyzing a user's cognitive and behavioral preferences based on their interview answers.
+
+Answers:
+- Compression (information processing): "${answers.compression}"
+- Friction (obstacle response): "${answers.friction}"
+- Execution (idea to action): "${answers.execution}"
+- Contradiction (handling conflict): "${answers.contradiction}"
+
+Return a JSON object with this exact structure (no markdown, raw JSON only):
+{
+  "overall_summary": "2-3 sentence description of this person's cognitive style",
+  "confidence_score": 0.85,
+  "compression_profile": { "preference": "dense|sparse", "description": "one sentence" },
+  "friction_profile": { "preference": "push|navigate", "description": "one sentence" },
+  "execution_profile": { "preference": "rapid|deliberate", "description": "one sentence" },
+  "contradiction_profile": { "preference": "resolve|hold", "description": "one sentence" }
+}`;
+
+    const response = await client.messages.create({
+      model: 'claude-sonnet-4-5',
+      max_tokens: 1024,
+      messages: [{ role: 'user', content: prompt }],
+    });
+
+    const claudeInsights = JSON.parse(response.content[0].text);
+
+    // Persist to behavioral_fingerprints
+    const userResult = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
+    if (userResult.rows[0]) {
+      await pool.query(
+        `INSERT INTO behavioral_fingerprints (user_id, profile_data, confidence)
+         VALUES ($1, $2, $3)`,
+        [userResult.rows[0].id, JSON.stringify({ interview: answers, insights: claudeInsights }), claudeInsights.confidence_score]
+      );
+    }
+
+    interviewSessions.delete(sessionId);
+    res.json({ success: true, claudeInsights });
+  } catch (error) {
+    console.error('Interview complete error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Start server
 app.listen(PORT, () => {
   console.log(`PatternAligned API running on port ${PORT}`);
