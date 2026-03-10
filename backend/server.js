@@ -41,12 +41,9 @@ app.post('/admin/migrate-schema', async (req, res) => {
 
     // Execute statements one by one
     const statements = [
-      // Enable UUID extension
-      'CREATE EXTENSION IF NOT EXISTS "uuid-ossp"',
-      
       // Users table
       `CREATE TABLE IF NOT EXISTS users (
-        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         name TEXT,
         email TEXT UNIQUE NOT NULL,
         email_verified TIMESTAMP WITH TIME ZONE,
@@ -57,7 +54,7 @@ app.post('/admin/migrate-schema', async (req, res) => {
 
       // Accounts table
       `CREATE TABLE IF NOT EXISTS accounts (
-        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         type TEXT NOT NULL,
         provider TEXT NOT NULL,
@@ -75,7 +72,7 @@ app.post('/admin/migrate-schema', async (req, res) => {
 
       // Sessions table
       `CREATE TABLE IF NOT EXISTS sessions (
-        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         expires TIMESTAMP WITH TIME ZONE NOT NULL,
         session_token TEXT UNIQUE NOT NULL,
@@ -93,7 +90,7 @@ app.post('/admin/migrate-schema', async (req, res) => {
 
       // Messages table
       `CREATE TABLE IF NOT EXISTS messages (
-        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         role TEXT NOT NULL CHECK (role IN ('user', 'assistant')),
         content TEXT NOT NULL,
@@ -110,7 +107,7 @@ app.post('/admin/migrate-schema', async (req, res) => {
 
       // Behavioral events
       `CREATE TABLE IF NOT EXISTS behavioral_events (
-        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         message_id UUID REFERENCES messages(id) ON DELETE CASCADE,
         event_type TEXT NOT NULL,
@@ -120,7 +117,7 @@ app.post('/admin/migrate-schema', async (req, res) => {
 
       // User behavioral fingerprints
       `CREATE TABLE IF NOT EXISTS user_behavioral_fingerprints (
-        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         fingerprint JSONB DEFAULT '{}'::jsonb,
         message_count INT DEFAULT 0,
@@ -131,7 +128,7 @@ app.post('/admin/migrate-schema', async (req, res) => {
 
       // Behavioral fingerprints (for existing endpoints)
       `CREATE TABLE IF NOT EXISTS behavioral_fingerprints (
-        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         profile_data JSONB DEFAULT '{}'::jsonb,
         confidence FLOAT DEFAULT 0,
@@ -141,7 +138,7 @@ app.post('/admin/migrate-schema', async (req, res) => {
 
       // User activity stats
       `CREATE TABLE IF NOT EXISTS user_activity_stats (
-        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         total_messages INT DEFAULT 0,
         messages_today INT DEFAULT 0,
@@ -164,7 +161,7 @@ app.post('/admin/migrate-schema', async (req, res) => {
       'CREATE INDEX IF NOT EXISTS idx_behavioral_fingerprints_user_id ON behavioral_fingerprints(user_id)',
 
       `CREATE TABLE IF NOT EXISTS interview_sessions (
-        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         probe_index INT DEFAULT 0,
         answers JSONB DEFAULT '{}'::jsonb,
@@ -176,6 +173,9 @@ app.post('/admin/migrate-schema', async (req, res) => {
       )`,
 
       'CREATE INDEX IF NOT EXISTS idx_interview_sessions_user_id ON interview_sessions(user_id)',
+
+      // Fix existing interview_sessions table if created with uuid_generate_v4()
+      'ALTER TABLE interview_sessions ALTER COLUMN id SET DEFAULT gen_random_uuid()',
     ];
 
     for (const statement of statements) {
