@@ -463,7 +463,8 @@ Return a JSON object with this exact structure (no markdown, raw JSON only):
       messages: [{ role: 'user', content: prompt }],
     });
 
-    const claudeInsights = JSON.parse(response.content[0].text);
+    const raw = response.content[0].text.replace(/^```(?:json)?\n?|```$/g, '').trim();
+    const claudeInsights = JSON.parse(raw);
 
     // Persist to behavioral_fingerprints
     const userResult = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
