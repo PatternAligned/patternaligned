@@ -162,6 +162,20 @@ app.post('/admin/migrate-schema', async (req, res) => {
       'CREATE INDEX IF NOT EXISTS idx_behavioral_events_user_id ON behavioral_events(user_id)',
       'CREATE INDEX IF NOT EXISTS idx_fingerprints_user_id ON user_behavioral_fingerprints(user_id)',
       'CREATE INDEX IF NOT EXISTS idx_behavioral_fingerprints_user_id ON behavioral_fingerprints(user_id)',
+
+      `CREATE TABLE IF NOT EXISTS interview_sessions (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        probe_index INT DEFAULT 0,
+        answers JSONB DEFAULT '{}'::jsonb,
+        status TEXT DEFAULT 'in_progress' CHECK (status IN ('in_progress', 'completed')),
+        claude_insights JSONB,
+        confidence_score FLOAT,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+      )`,
+
+      'CREATE INDEX IF NOT EXISTS idx_interview_sessions_user_id ON interview_sessions(user_id)',
     ];
 
     for (const statement of statements) {
@@ -373,52 +387,80 @@ const INTERVIEW_PROBES = [
   },
 ];
 
-// In-memory session store (single Render instance is fine)
-const interviewSessions = new Map();
+app.post('/behavioral/interview/start', getUser, async (req, res) => {
+  try {
+    const userEmail = req.user.email;
 
-app.post('/behavioral/interview/start', getUser, (req, res) => {
-  const sessionId = require('crypto').randomUUID();
-  interviewSessions.set(sessionId, {
-    email: req.user.email,
-    probeIndex: 0,
-    answers: {},
-    startedAt: Date.now(),
-  });
+    const userResult = await pool.query('SELECT id FROM users WHERE email = $1', [userEmail]);
+    if (!userResult.rows[0]) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    const userId = userResult.rows[0].id;
 
-  const firstProbe = INTERVIEW_PROBES[0];
-  res.json({
-    sessionId,
-    probe: firstProbe.id,
-    question: firstProbe.question,
-  });
+    const result = await pool.query(
+      `INSERT INTO interview_sessions (user_id, probe_index, answers, status)
+       VALUES ($1, 0, '{}'::jsonb, 'in_progress')
+       RETURNING id`,
+      [userId]
+    );
+
+    const sessionId = result.rows[0].id;
+    const firstProbe = INTERVIEW_PROBES[0];
+
+    res.json({
+      sessionId,
+      probe: firstProbe.id,
+      question: firstProbe.question,
+    });
+  } catch (error) {
+    console.error('Interview start error:', error);
+    res.status(500).json({ error: error.message });
+  }
 });
 
-app.post('/behavioral/interview/answer', getUser, (req, res) => {
+app.post('/behavioral/interview/answer', getUser, async (req, res) => {
   const { sessionId, answer } = req.body;
 
   if (!sessionId || !answer) {
     return res.status(400).json({ error: 'sessionId and answer are required' });
   }
 
-  const session = interviewSessions.get(sessionId);
-  if (!session) {
-    return res.status(404).json({ error: 'Session not found' });
+  try {
+    const sessionResult = await pool.query(
+      `SELECT probe_index, answers FROM interview_sessions WHERE id = $1 AND status = 'in_progress'`,
+      [sessionId]
+    );
+
+    if (!sessionResult.rows[0]) {
+      return res.status(404).json({ error: 'Session not found or already completed' });
+    }
+
+    const { probe_index, answers } = sessionResult.rows[0];
+    const currentProbe = INTERVIEW_PROBES[probe_index];
+    const updatedAnswers = { ...answers, [currentProbe.id]: answer };
+    const nextIndex = probe_index + 1;
+
+    await pool.query(
+      `UPDATE interview_sessions
+       SET probe_index = $1, answers = $2, updated_at = now()
+       WHERE id = $3`,
+      [nextIndex, JSON.stringify(updatedAnswers), sessionId]
+    );
+
+    const nextProbe = INTERVIEW_PROBES[nextIndex];
+    if (!nextProbe) {
+      return res.json({ isComplete: true });
+    }
+
+    res.json({
+      isComplete: false,
+      nextProbe: nextProbe.id,
+      nextQuestion: nextProbe.question,
+    });
+  } catch (error) {
+    console.error('Interview answer error:', error);
+    res.status(500).json({ error: error.message });
   }
-
-  const currentProbe = INTERVIEW_PROBES[session.probeIndex];
-  session.answers[currentProbe.id] = answer;
-  session.probeIndex += 1;
-
-  const nextProbe = INTERVIEW_PROBES[session.probeIndex];
-  if (!nextProbe) {
-    return res.json({ isComplete: true });
-  }
-
-  res.json({
-    isComplete: false,
-    nextProbe: nextProbe.id,
-    nextQuestion: nextProbe.question,
-  });
 });
 
 app.post('/behavioral/interview/complete', getUser, async (req, res) => {
@@ -428,14 +470,18 @@ app.post('/behavioral/interview/complete', getUser, async (req, res) => {
     return res.status(400).json({ error: 'sessionId is required' });
   }
 
-  const session = interviewSessions.get(sessionId);
-  if (!session) {
-    return res.status(404).json({ error: 'Session not found' });
-  }
-
-  const { answers, email } = session;
-
   try {
+    const sessionResult = await pool.query(
+      `SELECT answers FROM interview_sessions WHERE id = $1`,
+      [sessionId]
+    );
+
+    if (!sessionResult.rows[0]) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+
+    const answers = sessionResult.rows[0].answers;
+
     const Anthropic = require('@anthropic-ai/sdk');
     const client = new Anthropic({ apiKey: process.env.CLAUDE_API_KEY });
 
@@ -466,17 +512,13 @@ Return a JSON object with this exact structure (no markdown, raw JSON only):
     const raw = response.content[0].text.replace(/^```(?:json)?\n?|```$/g, '').trim();
     const claudeInsights = JSON.parse(raw);
 
-    // Persist to behavioral_fingerprints
-    const userResult = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
-    if (userResult.rows[0]) {
-      await pool.query(
-        `INSERT INTO behavioral_fingerprints (user_id, profile_data, confidence)
-         VALUES ($1, $2, $3)`,
-        [userResult.rows[0].id, JSON.stringify({ interview: answers, insights: claudeInsights }), claudeInsights.confidence_score]
-      );
-    }
+    await pool.query(
+      `UPDATE interview_sessions
+       SET status = 'completed', claude_insights = $1, confidence_score = $2, updated_at = now()
+       WHERE id = $3`,
+      [JSON.stringify(claudeInsights), claudeInsights.confidence_score, sessionId]
+    );
 
-    interviewSessions.delete(sessionId);
     res.json({ success: true, claudeInsights });
   } catch (error) {
     console.error('Interview complete error:', error);
