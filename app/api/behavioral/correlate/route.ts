@@ -104,6 +104,17 @@ export async function GET(req: NextRequest) {
 
     const userId = (session.user as any).id;
 
+    // Ensure tables exist before querying
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS behavioral_events (
+        id SERIAL PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        event_type TEXT NOT NULL,
+        metadata JSONB,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+
     const [eventsResult, interviewResult] = await Promise.all([
       pool.query(`SELECT * FROM behavioral_events WHERE user_id = $1 ORDER BY created_at ASC`, [userId]),
       pool.query(
@@ -111,7 +122,7 @@ export async function GET(req: NextRequest) {
          WHERE user_id = $1 AND status = 'completed' AND claude_insights IS NOT NULL
          ORDER BY created_at DESC LIMIT 1`,
         [userId]
-      ),
+      ).catch(() => ({ rows: [] })), // interview_sessions may not exist yet
     ]);
 
     // Build game measurements profile from game_event rows

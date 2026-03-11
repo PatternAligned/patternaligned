@@ -60,7 +60,10 @@ export default function FactsSheet({ onComplete }: { onComplete?: () => void }) 
     const fetchCorrelation = async () => {
       try {
         const response = await fetch('/api/behavioral/correlate');
-        if (!response.ok) throw new Error('Failed to fetch correlation data');
+        if (!response.ok) {
+          const errData = await response.json().catch(() => ({}));
+          throw new Error(errData.error || `API error ${response.status}`);
+        }
         const result = await response.json();
         setData(result);
       } catch (err) {
