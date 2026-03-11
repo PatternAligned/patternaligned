@@ -170,7 +170,7 @@ export default function InteractiveInterviewUI() {
         <div className="mb-8">
           <h1 className="text-3xl sm:text-4xl font-light mb-2">Cognitive Fingerprint</h1>
           <p className="text-silver text-sm sm:text-base">
-            Let's understand how you think. Answer a few questions naturally.
+            Let's understand how you think. Answer thoroughly and honestly — the more detail you provide, the better Nova learns your tone, vibe, interaction style, and decision-making pattern.
           </p>
         </div>
 
@@ -187,7 +187,7 @@ export default function InteractiveInterviewUI() {
               {turn.answer && (
                 <div className="ml-8">
                   <div className="text-silver text-xs mb-2 font-light">You</div>
-                  <div className="bg-blue-900/20 border border-blue-500/30 rounded p-4 text-sm sm:text-base leading-relaxed">
+                  <div className="bg-white/5 border border-white/10 rounded p-4 text-sm sm:text-base leading-relaxed">
                     {turn.answer}
                   </div>
                 </div>
@@ -217,21 +217,6 @@ export default function InteractiveInterviewUI() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {Object.entries(insights)
-                .filter(([key]) => key.endsWith('_profile'))
-                .map(([key, value]: [string, any]) => (
-                  <div key={key} className="border border-silver/20 rounded-lg p-4">
-                    <h3 className="text-sm font-light text-silver/80 mb-2 capitalize">
-                      {key.replace('_profile', '')}
-                    </h3>
-                    <p className="text-xs text-silver/60">
-                      {value.preference}
-                    </p>
-                  </div>
-                ))}
-            </div>
-
             <button
               onClick={continueToGames}
               className="w-full py-3 bg-white text-black font-light rounded hover:bg-silver transition mt-8"
@@ -259,9 +244,6 @@ export default function InteractiveInterviewUI() {
                 {loading ? 'Processing...' : 'Submit Answer'}
               </button>
 
-              <p className="text-xs text-silver/60 text-center">
-                Probes: Compression • Friction • Execution • Contradiction
-              </p>
             </form>
           )
         )}

@@ -10,6 +10,7 @@ import EnergyMoodState from './EnergyMoodState';
 
 interface Props {
   onAllGamesComplete?: () => void;
+  onBack?: () => void;
 }
 
 const games = [
@@ -24,6 +25,15 @@ const games = [
 export default function GameSequencer(props: Props) {
   const [currentGameIndex, setCurrentGameIndex] = useState(0);
   const [completedGames, setCompletedGames] = useState<number[]>([]);
+
+  const handleBack = () => {
+    if (currentGameIndex > 0) {
+      setCurrentGameIndex(currentGameIndex - 1);
+      setCompletedGames(completedGames.filter((id) => id !== games[currentGameIndex - 1].id));
+    } else {
+      props.onBack?.();
+    }
+  };
 
   const handleGameComplete = () => {
     const gameId = games[currentGameIndex].id;
@@ -47,16 +57,25 @@ export default function GameSequencer(props: Props) {
       <div className="bg-gray-900 border-b border-gray-700 p-4">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-gray-400">
-              Assessment {currentGameIndex + 1} of {games.length}
-            </span>
+            <div className="flex items-center gap-4">
+              <button
+                onClick={handleBack}
+                className="text-white/30 text-sm hover:text-white/60 transition-colors"
+              >
+                ← Back
+              </button>
+              <span className="text-sm text-gray-400">
+                Assessment {currentGameIndex + 1} of {games.length}
+              </span>
+            </div>
             <span className="text-sm text-gray-400">{currentGame.name}</span>
           </div>
-          <div className="w-full bg-gray-800 rounded-full h-2">
+          <div className="w-full bg-white/8 rounded-full h-px">
             <div
-              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+              className="h-px rounded-full transition-all duration-300"
               style={{
                 width: `${((currentGameIndex + 1) / games.length) * 100}%`,
+                backgroundColor: '#c0c0c0',
               }}
             ></div>
           </div>

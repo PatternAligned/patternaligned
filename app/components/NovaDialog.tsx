@@ -11,11 +11,22 @@ interface Question {
 
 interface NovaDialogProps {
   onComplete: () => void;
+  onBack?: () => void;
 }
 
-export default function NovaDialog({ onComplete }: NovaDialogProps) {
+const STORAGE_KEY = 'onboarding_nova_dialog';
+
+export default function NovaDialog({ onComplete, onBack }: NovaDialogProps) {
   const [questions, setQuestions] = useState<Question[]>([]);
-  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [answers, setAnswers] = useState<Record<string, string>>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = sessionStorage.getItem(STORAGE_KEY);
+        return saved ? JSON.parse(saved) : {};
+      } catch {}
+    }
+    return {};
+  });
   const [confidence, setConfidence] = useState(0);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -31,6 +42,12 @@ export default function NovaDialog({ onComplete }: NovaDialogProps) {
       .catch(() => setError('Failed to load questions'))
       .finally(() => setLoading(false));
   }, []);
+
+  const updateAnswer = (key: string, value: string) => {
+    const updated = { ...answers, [key]: value };
+    setAnswers(updated);
+    try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(updated)); } catch {}
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,26 +76,33 @@ export default function NovaDialog({ onComplete }: NovaDialogProps) {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
-        <div className="text-gray-400">Analyzing your profile...</div>
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-px h-12 bg-white/20 mx-auto mb-6 animate-pulse" />
+          <p className="text-white/30 text-xs uppercase tracking-widest">Analyzing your profile</p>
+        </div>
       </div>
     );
   }
 
-  // If profile is already complete enough, skip
   if (!loading && questions.length === 0) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white px-4">
+      <div className="min-h-screen bg-black flex items-center justify-center px-6">
         <div className="text-center max-w-md">
-          <div className="text-5xl mb-4">✓</div>
-          <h1 className="text-2xl font-bold mb-2">Profile complete</h1>
-          <p className="text-gray-500 mb-8">Your behavioral profile has enough signal. No gaps to fill.</p>
+          <p className="text-white/30 text-xs uppercase tracking-widest mb-6">Profile Complete</p>
+          <h1 className="text-3xl font-light text-white mb-3">No gaps to fill.</h1>
+          <p className="text-white/40 text-sm mb-10">Your behavioral profile has enough signal to work with.</p>
           <button
             onClick={onComplete}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-lg"
+            className="bg-white text-black font-semibold py-3 px-8 rounded-lg hover:bg-white/90 transition-colors"
           >
-            Continue
+            Continue →
           </button>
+          <div className="mt-8">
+            <button onClick={onBack} className="text-white/25 text-xs hover:text-white/50 transition-colors">
+              ← Back
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -87,64 +111,80 @@ export default function NovaDialog({ onComplete }: NovaDialogProps) {
   const gapCount = questions.length;
   const newConfidence = Math.min(confidence + gapCount * 8, 100);
 
+  const inputClass = `
+    w-full bg-white/5 border border-white/15 rounded-lg px-4 py-3 text-base text-white
+    placeholder-white/30 focus:outline-none focus:border-white/50 focus:bg-white/8
+    transition-colors resize-none
+  `.trim();
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-white px-4 py-12">
-      <div className="w-full max-w-lg">
-        {/* Confidence indicator */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-2">
-            <h1 className="text-3xl font-bold">Fill the gaps</h1>
-            <div className="text-right">
-              <div className="text-2xl font-bold text-blue-600">{confidence}%</div>
-              <div className="text-xs text-gray-400">profile confidence</div>
+    <div className="min-h-screen bg-black px-6 py-12">
+      <div className="w-full max-w-lg mx-auto">
+        <div className="mb-10">
+          <p className="text-white/30 text-xs uppercase tracking-widest mb-3">PatternAligned</p>
+          <h1 className="text-4xl font-light text-white mb-3">Fill the gaps</h1>
+          <div className="flex items-center gap-3">
+            <div className="flex-1 bg-white/8 rounded-full h-px">
+              <div
+                className="h-px rounded-full transition-all"
+                style={{ width: `${confidence}%`, backgroundColor: '#c0c0c0' }}
+              />
             </div>
+            <span className="text-white/40 text-sm tabular-nums">{confidence}% → ~{newConfidence}%</span>
           </div>
-          <div className="w-full bg-gray-100 rounded-full h-2 mb-1">
-            <div
-              className="bg-blue-600 h-2 rounded-full transition-all"
-              style={{ width: `${confidence}%` }}
-            />
-          </div>
-          <p className="text-sm text-gray-500">
-            {gapCount} {gapCount === 1 ? 'question' : 'questions'} will bring you to ~{newConfidence}%
+          <p className="text-white/30 text-xs mt-2">
+            {gapCount} {gapCount === 1 ? 'question' : 'questions'} to sharpen your profile
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-8">
           {questions.map((q) => (
             <div key={q.key}>
-              <label className="block text-base font-semibold text-gray-800 mb-2">
+              <label className="block text-xs font-semibold text-white/50 uppercase tracking-widest mb-3">
                 {q.question}
               </label>
               <textarea
                 placeholder={q.placeholder}
                 value={answers[q.key] || ''}
-                onChange={(e) => setAnswers({ ...answers, [q.key]: e.target.value })}
+                onChange={(e) => updateAnswer(q.key, e.target.value)}
                 rows={3}
-                className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                className={inputClass}
               />
             </div>
           ))}
 
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p className="text-red-400 text-sm">{error}</p>}
 
           <div className="flex gap-3">
             <button
               type="button"
               onClick={onComplete}
-              className="px-6 py-3 border border-gray-300 text-gray-600 rounded-lg hover:border-gray-400 transition-colors"
+              className="px-5 py-3 border border-white/15 text-white/40 rounded-lg hover:border-white/30 hover:text-white/60 transition-colors text-sm"
             >
               Skip
             </button>
             <button
               type="submit"
               disabled={saving}
-              className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-semibold py-3 rounded-lg transition-colors"
+              className="flex-1 bg-white text-black font-semibold py-3 rounded-lg hover:bg-white/90 disabled:opacity-40 transition-colors"
             >
-              {saving ? 'Saving...' : 'Save & Continue'}
+              {saving ? 'Saving...' : 'Save & Continue →'}
             </button>
           </div>
         </form>
+
+        <div className="mt-8 border-t border-white/10 pt-6">
+          <div className="flex items-center justify-between">
+            <button
+              type="button"
+              onClick={onBack}
+              className="text-white/30 text-xs hover:text-white/60 transition-colors"
+            >
+              ← Back
+            </button>
+            <p className="text-white/20 text-xs">Step 4 of 4</p>
+          </div>
+        </div>
       </div>
     </div>
   );

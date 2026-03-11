@@ -151,7 +151,7 @@ const MEASUREMENT_DESCRIPTIONS: Record<string, Record<string, string>> = {
 
 type Feedback = 'yes' | 'partial' | 'no';
 
-export default function FactsSheet({ onComplete }: { onComplete?: () => void }) {
+export default function FactsSheet({ onComplete, onBack }: { onComplete?: () => void; onBack?: () => void }) {
   const { data: session } = useSession();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<ProfileData | null>(null);
@@ -411,6 +411,15 @@ export default function FactsSheet({ onComplete }: { onComplete?: () => void }) 
         >
           Go to Dashboard →
         </button>
+
+        <div className="mt-6 flex justify-start">
+          <button
+            onClick={onBack}
+            className="text-white/25 text-xs hover:text-white/50 transition-colors"
+          >
+            ← Back
+          </button>
+        </div>
 
       </div>
     </div>

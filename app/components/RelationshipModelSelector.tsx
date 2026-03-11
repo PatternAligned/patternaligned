@@ -4,6 +4,7 @@ import { useState } from 'react';
 
 interface Props {
   onSelectionComplete?: () => void;
+  onBack?: () => void;
 }
 
 interface RelationshipMode {
@@ -40,7 +41,7 @@ const modes: RelationshipMode[] = [
   },
 ];
 
-export default function RelationshipModelSelector(props: Props) {
+export default function RelationshipModelSelector({ onSelectionComplete, onBack }: Props) {
   const [selectedMode, setSelectedMode] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -71,11 +72,7 @@ export default function RelationshipModelSelector(props: Props) {
         throw new Error('Failed to save relationship model');
       }
 
-      if (props.onSelectionComplete) {
-        props.onSelectionComplete();
-      } else {
-        alert('Relationship model saved!');
-      }
+      onSelectionComplete?.();
     } catch (error) {
       console.error('Error saving relationship model:', error);
       alert('Error saving. Try again.');
@@ -85,50 +82,63 @@ export default function RelationshipModelSelector(props: Props) {
   };
 
   return (
-    <div className="bg-black min-h-screen text-white p-8">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-4xl font-bold mb-2">How Do You Want to Work?</h1>
-        <p className="text-gray-400 mb-12">
-          Pick your preferred relationship model. Nova adapts to how you think.
-        </p>
+    <div className="min-h-screen bg-black text-white px-6 py-12">
+      <div className="max-w-lg mx-auto">
+        <div className="mb-10">
+          <p className="text-white/30 text-xs uppercase tracking-widest mb-3">PatternAligned</p>
+          <h1 className="text-4xl font-light text-white mb-2">How do you want to work?</h1>
+          <p className="text-white/40 text-sm">Nova adapts to your preferred dynamic.</p>
+        </div>
 
-        <div className="space-y-4">
+        <div className="space-y-3">
           {modes.map((mode) => (
             <button
               key={mode.id}
               onClick={() => setSelectedMode(mode.id)}
               disabled={isSubmitting}
-              className={`w-full border-2 rounded-lg p-6 text-left transition ${
+              className={`w-full border rounded-xl p-5 text-left transition-all ${
                 selectedMode === mode.id
-                  ? 'border-blue-500 bg-blue-900 bg-opacity-20'
-                  : 'border-gray-600 hover:border-white hover:bg-gray-900'
+                  ? 'border-white/40 bg-white/8'
+                  : 'border-white/10 hover:border-white/25 hover:bg-white/5'
               } disabled:opacity-50`}
             >
-              <h2 className="text-xl font-bold mb-1">{mode.name}</h2>
-              <p className="text-gray-400 mb-3">{mode.description}</p>
-              <p className="text-sm text-gray-500 italic">{mode.how_it_works}</p>
+              <div className="flex items-center justify-between mb-1">
+                <h2 className="text-base font-medium text-white">{mode.name}</h2>
+                {selectedMode === mode.id && (
+                  <span className="text-xs text-white/50">selected</span>
+                )}
+              </div>
+              <p className="text-white/50 text-sm mb-2">{mode.description}</p>
+              <p className="text-white/25 text-xs">{mode.how_it_works}</p>
             </button>
           ))}
         </div>
 
-        {selectedMode && (
-          <div className="mt-8 p-4 bg-gray-900 rounded-lg border border-gray-700 mb-6">
-            <p className="text-sm text-gray-400 mb-2">Selected:</p>
-            <p className="text-lg font-bold">
-              {modes.find((m) => m.id === selectedMode)?.name}
-            </p>
-          </div>
-        )}
-
-        {selectedMode && (
+        <div className="mt-8">
           <button
             onClick={handleContinue}
-            disabled={isSubmitting}
-            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 rounded-lg p-4 font-bold transition"
+            disabled={isSubmitting || !selectedMode}
+            className="w-full bg-white text-black font-semibold py-3 px-4 rounded-lg hover:bg-white/90 disabled:opacity-40 transition-colors"
           >
-            {isSubmitting ? 'Saving...' : 'Continue'}
+            {isSubmitting ? 'Saving...' : 'Continue →'}
           </button>
-        )}
+        </div>
+
+        <div className="mt-8 border-t border-white/10 pt-6">
+          <div className="w-full bg-white/10 rounded-full h-px mb-3">
+            <div className="h-px rounded-full" style={{ width: '75%', backgroundColor: '#c0c0c0' }} />
+          </div>
+          <div className="flex items-center justify-between">
+            <button
+              type="button"
+              onClick={onBack}
+              className="text-white/30 text-xs hover:text-white/60 transition-colors"
+            >
+              ← Back
+            </button>
+            <p className="text-white/20 text-xs">Step 3 of 4</p>
+          </div>
+        </div>
       </div>
     </div>
   );

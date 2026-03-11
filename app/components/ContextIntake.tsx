@@ -4,6 +4,7 @@ import { useState } from 'react';
 
 interface ContextIntakeProps {
   onComplete: () => void;
+  onBack?: () => void;
 }
 
 const inputClass = `
@@ -14,10 +15,26 @@ const inputClass = `
 
 const labelClass = 'block text-xs font-semibold text-white/50 uppercase tracking-widest mb-2';
 
-export default function ContextIntake({ onComplete }: ContextIntakeProps) {
-  const [form, setForm] = useState({ role: '', description: '', current_work: '', domain: '' });
+const STORAGE_KEY = 'onboarding_context';
+
+export default function ContextIntake({ onComplete, onBack }: ContextIntakeProps) {
+  const [form, setForm] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = sessionStorage.getItem(STORAGE_KEY);
+        if (saved) return JSON.parse(saved);
+      } catch {}
+    }
+    return { role: '', description: '', current_work: '', domain: '' };
+  });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const updateForm = (patch: Partial<typeof form>) => {
+    const updated = { ...form, ...patch };
+    setForm(updated);
+    try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(updated)); } catch {}
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,7 +73,7 @@ export default function ContextIntake({ onComplete }: ContextIntakeProps) {
               type="text"
               placeholder="Founder, Engineer, Designer, PM..."
               value={form.role}
-              onChange={(e) => setForm({ ...form, role: e.target.value })}
+              onChange={(e) => updateForm({ role: e.target.value })}
               className={inputClass}
             />
           </div>
@@ -66,7 +83,7 @@ export default function ContextIntake({ onComplete }: ContextIntakeProps) {
             <textarea
               placeholder="Brief description of your work"
               value={form.description}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
+              onChange={(e) => updateForm({ description: e.target.value })}
               rows={2}
               className={`${inputClass} resize-none`}
             />
@@ -77,7 +94,7 @@ export default function ContextIntake({ onComplete }: ContextIntakeProps) {
             <textarea
               placeholder="Current project, goal, or problem you're tackling"
               value={form.current_work}
-              onChange={(e) => setForm({ ...form, current_work: e.target.value })}
+              onChange={(e) => updateForm({ current_work: e.target.value })}
               rows={2}
               className={`${inputClass} resize-none`}
             />
@@ -89,7 +106,7 @@ export default function ContextIntake({ onComplete }: ContextIntakeProps) {
               type="text"
               placeholder="SaaS, Healthcare, Finance, Creative..."
               value={form.domain}
-              onChange={(e) => setForm({ ...form, domain: e.target.value })}
+              onChange={(e) => updateForm({ domain: e.target.value })}
               className={inputClass}
             />
           </div>
@@ -106,10 +123,19 @@ export default function ContextIntake({ onComplete }: ContextIntakeProps) {
         </form>
 
         <div className="mt-8 border-t border-white/10 pt-6">
-          <div className="w-full bg-white/10 rounded-full h-1">
-            <div className="bg-white/40 h-1 rounded-full" style={{ width: '25%' }} />
+          <div className="w-full bg-white/10 rounded-full h-px mb-3">
+            <div className="h-px rounded-full" style={{ width: '25%', backgroundColor: '#c0c0c0' }} />
           </div>
-          <p className="text-white/20 text-xs mt-2">Step 1 of 4</p>
+          <div className="flex items-center justify-between">
+            <button
+              type="button"
+              onClick={onBack}
+              className="text-white/30 text-xs hover:text-white/60 transition-colors"
+            >
+              ← Back
+            </button>
+            <p className="text-white/20 text-xs">Step 1 of 4</p>
+          </div>
         </div>
       </div>
     </div>

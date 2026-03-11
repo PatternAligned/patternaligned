@@ -4,7 +4,10 @@ import { useState } from 'react';
 
 interface SetupIntakeProps {
   onComplete: () => void;
+  onBack?: () => void;
 }
+
+const SETUP_STORAGE_KEY = 'onboarding_setup';
 
 const USE_CASES = [
   { id: 'debugging', label: 'Debugging' },
@@ -114,13 +117,31 @@ const inputClass = `
   transition-colors resize-none
 `.trim();
 
-export default function SetupIntake({ onComplete }: SetupIntakeProps) {
-  const [useCases, setUseCases] = useState<string[]>([]);
-  const [goals, setGoals] = useState('');
-  const [tones, setTones] = useState<string[]>([]);
-  const [tools, setTools] = useState<string[]>([]);
+function loadSetupState() {
+  if (typeof window === 'undefined') return null;
+  try {
+    const saved = sessionStorage.getItem(SETUP_STORAGE_KEY);
+    return saved ? JSON.parse(saved) : null;
+  } catch { return null; }
+}
+
+function saveSetupState(state: { useCases: string[]; goals: string; tones: string[]; tools: string[] }) {
+  try { sessionStorage.setItem(SETUP_STORAGE_KEY, JSON.stringify(state)); } catch {}
+}
+
+export default function SetupIntake({ onComplete, onBack }: SetupIntakeProps) {
+  const saved = typeof window !== 'undefined' ? loadSetupState() : null;
+  const [useCases, setUseCases] = useState<string[]>(saved?.useCases || []);
+  const [goals, setGoals] = useState(saved?.goals || '');
+  const [tones, setTones] = useState<string[]>(saved?.tones || []);
+  const [tools, setTools] = useState<string[]>(saved?.tools || []);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const persist = (patch: Partial<{ useCases: string[]; goals: string; tones: string[]; tools: string[] }>) => {
+    const state = { useCases, goals, tones, tools, ...patch };
+    saveSetupState(state);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -155,7 +176,7 @@ export default function SetupIntake({ onComplete }: SetupIntakeProps) {
         <form onSubmit={handleSubmit} className="space-y-10">
           <div>
             <label className={labelClass}>What do you use this for?</label>
-            <MultiSelect options={USE_CASES} selected={useCases} onChange={setUseCases} />
+            <MultiSelect options={USE_CASES} selected={useCases} onChange={(v) => { setUseCases(v); persist({ useCases: v }); }} />
             {useCases.length > 0 && (
               <p className="text-white/25 text-xs mt-2">{useCases.length} selected</p>
             )}
@@ -166,7 +187,7 @@ export default function SetupIntake({ onComplete }: SetupIntakeProps) {
             <textarea
               placeholder="Ship the MVP, learn systems design, close a round, fix the hiring pipeline..."
               value={goals}
-              onChange={(e) => setGoals(e.target.value)}
+              onChange={(e) => { setGoals(e.target.value); persist({ goals: e.target.value }); }}
               rows={2}
               className={inputClass}
             />
@@ -174,12 +195,12 @@ export default function SetupIntake({ onComplete }: SetupIntakeProps) {
 
           <div>
             <label className={labelClass}>How should Nova talk to you?</label>
-            <MultiSelect options={TONE_OPTIONS} selected={tones} onChange={setTones} />
+            <MultiSelect options={TONE_OPTIONS} selected={tones} onChange={(v) => { setTones(v); persist({ tones: v }); }} />
           </div>
 
           <div>
             <label className={labelClass}>Your stack</label>
-            <MultiSelect options={TOOLS} selected={tools} onChange={setTools} />
+            <MultiSelect options={TOOLS} selected={tools} onChange={(v) => { setTools(v); persist({ tools: v }); }} />
             {tools.length > 0 && (
               <p className="text-white/25 text-xs mt-2">{tools.length} selected</p>
             )}
@@ -197,10 +218,19 @@ export default function SetupIntake({ onComplete }: SetupIntakeProps) {
         </form>
 
         <div className="mt-8 border-t border-white/10 pt-6">
-          <div className="w-full bg-white/10 rounded-full h-1">
-            <div className="bg-white/40 h-1 rounded-full" style={{ width: '50%' }} />
+          <div className="w-full bg-white/10 rounded-full h-px mb-3">
+            <div className="h-px rounded-full" style={{ width: '50%', backgroundColor: '#c0c0c0' }} />
           </div>
-          <p className="text-white/20 text-xs mt-2">Step 2 of 4</p>
+          <div className="flex items-center justify-between">
+            <button
+              type="button"
+              onClick={onBack}
+              className="text-white/30 text-xs hover:text-white/60 transition-colors"
+            >
+              ← Back
+            </button>
+            <p className="text-white/20 text-xs">Step 2 of 4</p>
+          </div>
         </div>
       </div>
     </div>
