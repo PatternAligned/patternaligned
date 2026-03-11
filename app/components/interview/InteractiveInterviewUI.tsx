@@ -196,9 +196,13 @@ export default function InteractiveInterviewUI() {
           ))}
 
           {loading && (
-            <div className="flex items-center space-x-2 text-silver text-sm">
-              <div className="w-2 h-2 bg-silver rounded-full animate-pulse"></div>
-              <span>Claude is thinking...</span>
+            <div className="flex items-center gap-3 text-white/40 text-sm py-2">
+              <div className="flex gap-1">
+                <div className="w-1.5 h-1.5 bg-white/40 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                <div className="w-1.5 h-1.5 bg-white/40 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                <div className="w-1.5 h-1.5 bg-white/40 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+              </div>
+              <span>Analyzing your response...</span>
             </div>
           )}
 
@@ -240,9 +244,9 @@ export default function InteractiveInterviewUI() {
               <button
                 type="submit"
                 disabled={!userAnswer.trim() || loading}
-                className="py-3 bg-white text-black font-light rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-silver transition"
+                className="py-3 bg-white text-black font-light rounded disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/90 transition"
               >
-                {loading ? 'Processing...' : 'Submit Answer'}
+                {loading ? 'Analyzing...' : 'Submit Answer'}
               </button>
 
             </form>

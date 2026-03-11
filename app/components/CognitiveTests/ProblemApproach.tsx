@@ -131,18 +131,18 @@ export default function ProblemApproach(props: Props) {
     return (
       <div className="bg-black min-h-screen text-white p-8">
         <div className="max-w-4xl mx-auto">
-          <h1 className="text-4xl font-bold mb-2">Problem Approach</h1>
-          <p className="text-gray-400 mb-12">Which scenario would you tackle first?</p>
+          <h1 className="text-4xl font-light mb-2">Problem Approach</h1>
+          <p className="text-white/40 mb-12">Which scenario would you tackle first?</p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {problems.map((problem) => (
               <button
                 key={problem.id}
                 onClick={() => handleProblemSelect(problem.id)}
-                className="border border-gray-600 rounded-lg p-6 hover:border-white hover:bg-gray-900 transition text-left"
+                className="group border border-white/15 rounded-lg p-6 hover:border-[#c0c0c0] hover:bg-[#c0c0c0] transition text-left"
               >
-                <h2 className="text-xl font-bold mb-2">{problem.title}</h2>
-                <p className="text-gray-400">{problem.description}</p>
+                <h2 className="text-xl font-bold mb-2 group-hover:text-black">{problem.title}</h2>
+                <p className="text-white/50 group-hover:text-black/70">{problem.description}</p>
               </button>
             ))}
           </div>
@@ -154,12 +154,12 @@ export default function ProblemApproach(props: Props) {
   return (
     <div className="bg-black min-h-screen text-white p-8">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-4xl font-bold mb-2">Problem Approach</h1>
-        <p className="text-gray-400 mb-8">How would you approach this?</p>
+        <h1 className="text-4xl font-light mb-2">Problem Approach</h1>
+        <p className="text-white/40 mb-8">How would you approach this?</p>
 
         {selectedProblem && (
-          <div className="bg-gray-900 border border-gray-700 rounded-lg p-6 mb-12">
-            <p className="text-sm text-gray-400 mb-2">Selected:</p>
+          <div className="bg-white/5 border border-white/15 rounded-lg p-6 mb-12">
+            <p className="text-sm text-white/40 mb-2">Selected:</p>
             <p className="text-xl font-bold">
               {problems.find((p) => p.id === selectedProblem)?.title}
             </p>
@@ -172,17 +172,16 @@ export default function ProblemApproach(props: Props) {
               key={approach.id}
               onClick={() => handleApproachSelect(approach.id)}
               disabled={isSubmitting}
-              className="border border-gray-600 rounded-lg p-6 hover:border-white hover:bg-gray-900 transition text-left disabled:opacity-50"
+              className="group border border-white/15 rounded-lg p-6 hover:border-[#c0c0c0] hover:bg-[#c0c0c0] transition text-left disabled:opacity-50"
             >
-              <h2 className="text-xl font-bold mb-2">{approach.style}</h2>
-              <p className="text-gray-400">{approach.description}</p>
+              <h2 className="text-xl font-bold mb-2 group-hover:text-black">{approach.style}</h2>
+              <p className="text-white/50 group-hover:text-black/70">{approach.description}</p>
             </button>
           ))}
         </div>
 
-        {isSubmitting && <p className="text-center mt-8 text-gray-400">Saving...</p>}
+        {isSubmitting && <p className="text-center mt-8 text-white/40">Saving...</p>}
       </div>
     </div>
   );
 }
-

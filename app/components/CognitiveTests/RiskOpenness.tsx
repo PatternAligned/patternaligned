@@ -93,8 +93,8 @@ export default function RiskOpenness(props: Props) {
   return (
     <div className="bg-black min-h-screen text-white p-8">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-4xl font-bold mb-2">Risk Openness</h1>
-        <p className="text-gray-400 mb-12">How much risk are you comfortable with?</p>
+        <h1 className="text-4xl font-light mb-2">Risk Openness</h1>
+        <p className="text-white/40 mb-12">How much risk are you comfortable with?</p>
 
         <div className="space-y-4">
           {risks.map((risk) => (
@@ -102,16 +102,16 @@ export default function RiskOpenness(props: Props) {
               key={risk.id}
               onClick={() => handleRiskSelect(risk.id)}
               disabled={isSubmitting}
-              className="w-full border border-gray-600 rounded-lg p-6 hover:border-white hover:bg-gray-900 transition text-left disabled:opacity-50"
+              className="group w-full border border-white/15 rounded-lg p-6 hover:border-[#c0c0c0] hover:bg-[#c0c0c0] transition text-left disabled:opacity-50"
             >
-              <h2 className="text-xl font-bold mb-1">{risk.name}</h2>
-              <p className="text-gray-400 mb-3">{risk.description}</p>
-              <p className="text-sm text-gray-500 italic">{risk.behavior}</p>
+              <h2 className="text-xl font-bold mb-1 group-hover:text-black">{risk.name}</h2>
+              <p className="text-white/50 group-hover:text-black/70 mb-3">{risk.description}</p>
+              <p className="text-sm text-white/30 italic group-hover:text-black/60">{risk.behavior}</p>
             </button>
           ))}
         </div>
 
-        {isSubmitting && <p className="text-center mt-12 text-gray-400">Saving...</p>}
+        {isSubmitting && <p className="text-center mt-12 text-white/40">Saving...</p>}
       </div>
     </div>
   );

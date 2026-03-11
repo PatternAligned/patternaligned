@@ -50,6 +50,18 @@ const TONE_OPTIONS = [
   { id: 'no_fluff', label: 'No corporate speak' },
   { id: 'peer', label: 'Peer, not assistant' },
   { id: 'hype', label: 'Hype me up' },
+  { id: 'concise_2', label: 'Concise' },
+  { id: 'verbose', label: 'Verbose' },
+  { id: 'questioning', label: 'Questioning' },
+  { id: 'skeptical', label: 'Skeptical' },
+  { id: 'encouraging', label: 'Encouraging' },
+  { id: 'humble', label: 'Humble' },
+  { id: 'witty', label: 'Witty' },
+  { id: 'systems_thinking', label: 'Systems-thinking' },
+  { id: 'iterative', label: 'Iterative' },
+  { id: 'devils_advocate', label: "Devil's advocate" },
+  { id: 'vulnerable', label: 'Vulnerable' },
+  { id: 'provocative', label: 'Provocative' },
 ];
 
 const TOOLS = [
@@ -99,7 +111,7 @@ function MultiSelect({
             className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-all ${
               active
                 ? 'bg-white text-black border-white'
-                : 'bg-transparent border-white/20 text-white/60 hover:border-white/50 hover:text-white/90'
+                : 'bg-transparent border-white/20 text-white/60 hover:border-[#c0c0c0] hover:bg-[#c0c0c0] hover:text-black'
             }`}
           >
             {opt.label}
@@ -125,7 +137,7 @@ function loadSetupState() {
   } catch { return null; }
 }
 
-function saveSetupState(state: { useCases: string[]; goals: string; tones: string[]; tools: string[] }) {
+function saveSetupState(state: { useCases: string[]; goals: string; tones: string[]; tools: string[]; otherTools?: string }) {
   try { sessionStorage.setItem(SETUP_STORAGE_KEY, JSON.stringify(state)); } catch {}
 }
 
@@ -135,12 +147,18 @@ export default function SetupIntake({ onComplete, onBack }: SetupIntakeProps) {
   const [goals, setGoals] = useState(saved?.goals || '');
   const [tones, setTones] = useState<string[]>(saved?.tones || []);
   const [tools, setTools] = useState<string[]>(saved?.tools || []);
+  const [otherTools, setOtherTools] = useState(saved?.otherTools || '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const persist = (patch: Partial<{ useCases: string[]; goals: string; tones: string[]; tools: string[] }>) => {
-    const state = { useCases, goals, tones, tools, ...patch };
+    const state = { useCases, goals, tones, tools, otherTools, ...patch };
     saveSetupState(state);
+  };
+
+  const persistOther = (val: string) => {
+    const state = { useCases, goals, tones, tools, otherTools: val };
+    saveSetupState(state as any);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -151,7 +169,7 @@ export default function SetupIntake({ onComplete, onBack }: SetupIntakeProps) {
       const res = await fetch('/api/user/preferences', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ use_cases: useCases, goals, tones, tools }),
+        body: JSON.stringify({ use_cases: useCases, goals, tones, tools, other_tools: otherTools.split(',').map((t: string) => t.trim()).filter(Boolean) }),
       });
       if (!res.ok) {
         const data = await res.json();
@@ -204,6 +222,16 @@ export default function SetupIntake({ onComplete, onBack }: SetupIntakeProps) {
             {tools.length > 0 && (
               <p className="text-white/25 text-xs mt-2">{tools.length} selected</p>
             )}
+            <div className="mt-4">
+              <label className={labelClass}>Other tools</label>
+              <input
+                type="text"
+                placeholder="Tools not listed? Type them here (comma-separated)"
+                value={otherTools}
+                onChange={(e) => { setOtherTools(e.target.value); persistOther(e.target.value); }}
+                className={inputClass}
+              />
+            </div>
           </div>
 
           {error && <p className="text-red-400 text-sm">{error}</p>}
