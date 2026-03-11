@@ -13,12 +13,30 @@ const USE_CASES = [
   { id: 'learning', label: 'Learning' },
   { id: 'writing', label: 'Writing' },
   { id: 'planning', label: 'Planning' },
-  { id: 'reviewing', label: 'Code review' },
+  { id: 'code_review', label: 'Code review' },
   { id: 'research', label: 'Research' },
+  { id: 'hiring', label: 'Hiring' },
+  { id: 'analysis', label: 'Analysis' },
+  { id: 'strategy', label: 'Strategy' },
+  { id: 'system_design', label: 'System design' },
+  { id: 'documentation', label: 'Docs' },
+  { id: 'teaching', label: 'Teaching' },
+  { id: 'product', label: 'Product decisions' },
+  { id: 'architecture', label: 'Architecture' },
+  { id: 'refactoring', label: 'Refactoring' },
+  { id: 'testing', label: 'Testing' },
+  { id: 'performance', label: 'Performance' },
+  { id: 'security', label: 'Security' },
+  { id: 'data', label: 'Data / SQL' },
+  { id: 'ops', label: 'DevOps / Infra' },
+  { id: 'pitching', label: 'Pitching / decks' },
+  { id: 'negotiation', label: 'Negotiation' },
+  { id: 'unblocking', label: 'Getting unstuck' },
 ];
 
 const TONE_OPTIONS = [
   { id: 'direct', label: 'Direct' },
+  { id: 'blunt', label: 'Blunt' },
   { id: 'sarcastic', label: 'Sarcastic' },
   { id: 'analytical', label: 'Analytical' },
   { id: 'warm', label: 'Warm' },
@@ -26,6 +44,9 @@ const TONE_OPTIONS = [
   { id: 'concise', label: 'Ruthlessly concise' },
   { id: 'collaborative', label: 'Collaborative' },
   { id: 'challenging', label: 'Challenging' },
+  { id: 'no_fluff', label: 'No corporate speak' },
+  { id: 'peer', label: 'Peer, not assistant' },
+  { id: 'hype', label: 'Hype me up' },
 ];
 
 const TOOLS = [
@@ -39,6 +60,16 @@ const TOOLS = [
   { id: 'notion', label: 'Notion' },
   { id: 'figma', label: 'Figma' },
   { id: 'vercel', label: 'Vercel' },
+  { id: 'render', label: 'Render' },
+  { id: 'supabase', label: 'Supabase' },
+  { id: 'postgres', label: 'PostgreSQL' },
+  { id: 'docker', label: 'Docker' },
+  { id: 'aws', label: 'AWS' },
+  { id: 'gcp', label: 'GCP' },
+  { id: 'jira', label: 'Jira' },
+  { id: 'airtable', label: 'Airtable' },
+  { id: 'retool', label: 'Retool' },
+  { id: 'postman', label: 'Postman' },
 ];
 
 function MultiSelect({
@@ -62,10 +93,10 @@ function MultiSelect({
             key={opt.id}
             type="button"
             onClick={() => toggle(opt.id)}
-            className={`px-4 py-2 rounded-full text-sm font-medium border transition-colors ${
+            className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-all ${
               active
-                ? 'bg-blue-600 border-blue-600 text-white'
-                : 'bg-white border-gray-300 text-gray-700 hover:border-blue-400'
+                ? 'bg-white text-black border-white'
+                : 'bg-transparent border-white/20 text-white/60 hover:border-white/50 hover:text-white/90'
             }`}
           >
             {opt.label}
@@ -75,6 +106,13 @@ function MultiSelect({
     </div>
   );
 }
+
+const labelClass = 'block text-xs font-semibold text-white/50 uppercase tracking-widest mb-3';
+const inputClass = `
+  w-full bg-white/5 border border-white/15 rounded-lg px-4 py-3 text-base text-white
+  placeholder-white/30 focus:outline-none focus:border-white/50 focus:bg-white/8
+  transition-colors resize-none
+`.trim();
 
 export default function SetupIntake({ onComplete }: SetupIntakeProps) {
   const [useCases, setUseCases] = useState<string[]>([]);
@@ -88,19 +126,16 @@ export default function SetupIntake({ onComplete }: SetupIntakeProps) {
     e.preventDefault();
     setSaving(true);
     setError(null);
-
     try {
       const res = await fetch('/api/user/preferences', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ use_cases: useCases, goals, tones, tools }),
       });
-
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.error || 'Failed to save');
       }
-
       onComplete();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
@@ -109,58 +144,64 @@ export default function SetupIntake({ onComplete }: SetupIntakeProps) {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-white px-4 py-12">
-      <div className="w-full max-w-lg">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">How you work</h1>
-          <p className="text-gray-500">Shapes how the system behaves with you.</p>
+    <div className="min-h-screen bg-black px-6 py-12">
+      <div className="w-full max-w-lg mx-auto">
+        <div className="mb-10">
+          <p className="text-white/30 text-xs uppercase tracking-widest mb-3">PatternAligned</p>
+          <h1 className="text-4xl font-light text-white mb-2">How you work</h1>
+          <p className="text-white/40 text-sm">Shapes how Nova thinks and talks with you.</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-8">
+        <form onSubmit={handleSubmit} className="space-y-10">
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-3">
-              What do you use me for?
-            </label>
+            <label className={labelClass}>What do you use this for?</label>
             <MultiSelect options={USE_CASES} selected={useCases} onChange={setUseCases} />
+            {useCases.length > 0 && (
+              <p className="text-white/25 text-xs mt-2">{useCases.length} selected</p>
+            )}
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1">
-              What are your goals right now?
-            </label>
+            <label className={labelClass}>What are your goals right now?</label>
             <textarea
-              placeholder="Ship faster, learn a new stack, get unstuck on a product..."
+              placeholder="Ship the MVP, learn systems design, close a round, fix the hiring pipeline..."
               value={goals}
               onChange={(e) => setGoals(e.target.value)}
               rows={2}
-              className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              className={inputClass}
             />
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-3">
-              What's your ideal working relationship?
-            </label>
+            <label className={labelClass}>How should Nova talk to you?</label>
             <MultiSelect options={TONE_OPTIONS} selected={tones} onChange={setTones} />
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-3">
-              Tools you use?
-            </label>
+            <label className={labelClass}>Your stack</label>
             <MultiSelect options={TOOLS} selected={tools} onChange={setTools} />
+            {tools.length > 0 && (
+              <p className="text-white/25 text-xs mt-2">{tools.length} selected</p>
+            )}
           </div>
 
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p className="text-red-400 text-sm">{error}</p>}
 
           <button
             type="submit"
             disabled={saving}
-            className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-semibold py-3 px-4 rounded-lg transition-colors"
+            className="w-full bg-white text-black font-semibold py-3 px-4 rounded-lg hover:bg-white/90 disabled:opacity-40 transition-colors"
           >
-            {saving ? 'Saving...' : 'Continue'}
+            {saving ? 'Saving...' : 'Continue →'}
           </button>
         </form>
+
+        <div className="mt-8 border-t border-white/10 pt-6">
+          <div className="w-full bg-white/10 rounded-full h-1">
+            <div className="bg-white/40 h-1 rounded-full" style={{ width: '50%' }} />
+          </div>
+          <p className="text-white/20 text-xs mt-2">Step 2 of 4</p>
+        </div>
       </div>
     </div>
   );
