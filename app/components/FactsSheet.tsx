@@ -21,30 +21,132 @@ interface ProfileData {
   correlationResult: CorrelationResult;
 }
 
-const PROBE_LABELS: Record<string, string> = {
-  compression_profile: 'How you take in information',
-  friction_profile: 'How you handle obstacles',
-  execution_profile: 'How you move from idea to action',
-  contradiction_profile: 'How you handle conflict',
+const PROBE_META: Record<string, {
+  label: string;
+  question: string;
+  dense_label?: string;
+  sparse_label?: string;
+  push_label?: string;
+  navigate_label?: string;
+  rapid_label?: string;
+  deliberate_label?: string;
+  resolve_label?: string;
+  hold_label?: string;
+  leverage: Record<string, string>;
+  watchfor: Record<string, string>;
+}> = {
+  compression_profile: {
+    label: 'Information Processing',
+    question: 'How you take in and compress information',
+    leverage: {
+      dense: 'You extract signal at speed. Use this to cut through noise in meetings, documents, and briefs faster than most. Ask for the bottom line first — always.',
+      sparse: 'You absorb fully before acting. This makes you thorough and hard to blindside. Use it to catch what others miss when they rush.',
+    },
+    watchfor: {
+      dense: 'You can move on incomplete information and miss nuance others flagged. Slow down on high-stakes decisions.',
+      sparse: 'Information overload is a real risk. Set hard limits on inputs before you decide.',
+    },
+  },
+  friction_profile: {
+    label: 'Obstacle Response',
+    question: 'How you behave when you hit resistance',
+    leverage: {
+      navigate: 'Your instinct to route around is usually faster than forcing through. When blocked, trust it — you find paths others don\'t see.',
+      push: 'Your threshold for pushing through is high. Most people quit before you do. This is an asset in execution.',
+    },
+    watchfor: {
+      navigate: 'Some walls need to be broken, not routed around. Know when the direct path is actually the right one.',
+      push: 'Brute force has diminishing returns. Watch for when persistence is costing more than a detour would.',
+    },
+  },
+  execution_profile: {
+    label: 'Execution Mode',
+    question: 'How you move from idea to action',
+    leverage: {
+      rapid: 'Your bias toward action is a genuine competitive advantage. Ship, learn, iterate — this is your native loop.',
+      deliberate: 'Your thoroughness prevents expensive mistakes. Use it as a forcing function on high-stakes bets where reversibility is low.',
+    },
+    watchfor: {
+      rapid: 'Speed without a minimum-viable analysis threshold leads to rework. Set a floor before shipping.',
+      deliberate: 'Thoroughness without a decision deadline becomes paralysis. Time-box your analysis.',
+    },
+  },
+  contradiction_profile: {
+    label: 'Tension Tolerance',
+    question: 'How you handle competing truths and unresolved conflict',
+    leverage: {
+      hold: 'You can sit with ambiguity others can\'t. In fast-moving environments, this means you don\'t panic-resolve prematurely.',
+      resolve: 'You drive to clarity. In ambiguous situations, you\'re the one who gets a decision made when everyone else is stalling.',
+    },
+    watchfor: {
+      hold: 'Sometimes tension needs resolution, not tolerance. Know when holding both is avoidance.',
+      resolve: 'Premature resolution kills nuance. "Good enough and decided" isn\'t always better than "still open."',
+    },
+  },
 };
 
-const ACTIONABLE: Record<string, (pref: string) => string> = {
-  compression_profile: (p) =>
-    p === 'dense'
-      ? 'Ask for the bottom line first. Give others permission to skip the preamble with you.'
-      : 'Ask collaborators to strip context down. It\'s not rudeness — it\'s how you process.',
-  friction_profile: (p) =>
-    p === 'navigate'
-      ? 'When blocked, your instinct to route around is usually faster than forcing through. Trust it.'
-      : 'You have a high push-through threshold. Watch for when brute force is costing more than a detour would.',
-  execution_profile: (p) =>
-    p === 'rapid'
-      ? 'Protect your bias toward action. Set a "minimum viable analysis" threshold so you don\'t stall in planning loops.'
-      : 'Your deliberate approach is a feature. Set decision deadlines so thoroughness doesn\'t become paralysis.',
-  contradiction_profile: (p) =>
-    p === 'hold'
-      ? 'You can sit with tension others can\'t. Use this to your advantage in ambiguous situations — you won\'t panic-resolve prematurely.'
-      : 'You\'re wired to resolve. In fast-moving environments, sometimes "good enough and decided" beats "perfect and pending."',
+const MEASUREMENT_LABELS: Record<string, string> = {
+  topic_preference: 'Curiosity Vector',
+  problem_solving_style: 'Problem Approach',
+  pace_preference: 'Work Pace',
+  communication_style: 'Communication Mode',
+  risk_tolerance: 'Risk Posture',
+  energy_pattern: 'Energy Pattern',
+  relationship_model: 'Collaboration Model',
+  activation_pattern: 'Activation Pattern',
+};
+
+const MEASUREMENT_DESCRIPTIONS: Record<string, Record<string, string>> = {
+  topic_preference: {
+    Abstract: 'You\'re drawn to systems, patterns, and ideas over specifics.',
+    Practical: 'You care about what works in the real world, not elegant theory.',
+    Historical: 'You understand the present through the lens of how things evolved.',
+    Conspiracy: 'You look for the hidden structure beneath the surface narrative.',
+    Personal: 'You understand through people — motivations, relationships, dynamics.',
+  },
+  problem_solving_style: {
+    Analytical: 'You map root causes before acting. You want the full picture.',
+    Intuitive: 'You trust signal over process. Your gut computes fast.',
+    Collaborative: 'You think better in dialogue. Others sharpen your reasoning.',
+    Delegative: 'You orchestrate. You find the right person, not the right answer.',
+  },
+  pace_preference: {
+    Sprint: 'Intense bursts, then recovery. You\'re not built for slow and steady.',
+    Cruise: 'Sustainable over explosive. You optimize for longevity.',
+    Flow: 'You find your own rhythm. External pacing disrupts your output.',
+    Adaptive: 'You match the moment. Context determines your gear.',
+  },
+  communication_style: {
+    Concise: 'Bottom line first. Always. The context can follow if needed.',
+    Structured: 'You think in frameworks. Logical order is how you process.',
+    Narrative: 'You give and need the full arc. Stories land better than bullets.',
+    Visual: 'Show, don\'t tell. Diagrams over descriptions.',
+  },
+  risk_tolerance: {
+    Conservative: 'Evidence before commitment. You move when you\'re sure.',
+    Measured: 'Calculated bets. You weigh before you leap.',
+    Aggressive: 'Move fast, adjust based on results.',
+    Adaptive: 'Context-dependent. Stakes determine your posture.',
+  },
+  energy_pattern: {
+    Morning: 'You peak early. Protect your mornings for your highest-leverage work.',
+    Afternoon: 'You find your stride after midday.',
+    'Flow-Dependent': 'Your energy follows engagement. Interest drives output, not clock.',
+    Consistent: 'Steady throughout. You don\'t have a peak — you have a baseline.',
+  },
+  relationship_model: {
+    'tool_mode': 'Purposeful and low-overhead. You want high-signal, low-friction interactions.',
+    'partner_mode': 'You think better with others present. Collaboration is generative for you.',
+    'structured_guide': 'Clear frameworks before you move. You need the scaffolding.',
+    'socratic': 'You learn by being questioned. You want someone to think alongside you.',
+  },
+  activation_pattern: {
+    'Deep Work': 'Long, uninterrupted focus blocks. Context switching is expensive for you.',
+    'Banter': 'Rapid-fire back-and-forth. You activate through quick exchange.',
+    'Structured': 'Clear agendas and direction. You move when you know the shape of the work.',
+    'Quiet': 'Independent, without social overhead. You do your best work alone.',
+    'Meditative': 'Reflection and inner processing. Slow in, sharp out.',
+  },
 };
 
 type Feedback = 'yes' | 'partial' | 'no';
@@ -90,219 +192,268 @@ export default function FactsSheet({ onComplete }: { onComplete?: () => void }) 
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-lg text-gray-500">Building your profile...</div>
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-px h-12 bg-white/20 mx-auto mb-6 animate-pulse" />
+          <p className="text-white/30 text-xs uppercase tracking-widest">Building your profile</p>
+        </div>
       </div>
     );
   }
 
   if (error || !data) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-lg text-red-600">{error || 'Failed to load profile'}</div>
+      <div className="min-h-screen bg-black flex items-center justify-center px-6">
+        <div className="border border-white/10 rounded-2xl p-8 max-w-md w-full">
+          <p className="text-white/40 text-xs uppercase tracking-widest mb-2">Error</p>
+          <p className="text-white text-sm font-mono">{error || 'Failed to load profile'}</p>
+        </div>
       </div>
     );
   }
 
   const { interview_profiles, game_measurements, dialog_fills = {}, correlationResult } = data;
   const { insights, workStyleSynthesis, activationMatchScore, confidenceScore } = correlationResult;
+  const synergies = insights.filter((i) => i.type === 'synergy');
+  const contradictions = insights.filter((i) => i.type === 'contradiction');
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Here's how you work</h1>
-        <p className="text-gray-500">
-          Based on your interview responses and cognitive assessments. This is about you — not a generic type.
-        </p>
-      </div>
+    <div className="min-h-screen bg-black text-white">
+      <div className="max-w-3xl mx-auto px-6 py-16">
 
-      {/* Confidence banner */}
-      <div className="flex items-center gap-4 mb-8 p-4 bg-gray-50 border border-gray-200 rounded-xl">
-        <div className="text-center">
-          <div className="text-2xl font-bold text-blue-600">{confidenceScore}%</div>
-          <div className="text-xs text-gray-500">confidence</div>
+        {/* Header */}
+        <div className="mb-16">
+          <p className="text-white/25 text-xs uppercase tracking-[0.2em] mb-4">PatternAligned · Cognitive Profile</p>
+          <h1 className="text-5xl font-light text-white mb-6 leading-tight">Your cognitive<br />fingerprint.</h1>
+          <p className="text-white/40 text-sm max-w-md leading-relaxed">
+            Derived from your interview responses and behavioral assessments. This is not a type. It's a map of how you actually operate.
+          </p>
         </div>
-        <div className="flex-1">
-          <div className="w-full bg-gray-200 rounded-full h-2 mb-1">
-            <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${confidenceScore}%` }} />
+
+        {/* Signal quality bar */}
+        <div className="border border-white/10 rounded-2xl p-6 mb-12 bg-white/[0.02]">
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-white/30 text-xs uppercase tracking-widest">Signal Confidence</span>
+            <span className="text-white font-light text-2xl tabular-nums">{confidenceScore}%</span>
           </div>
-          <p className="text-xs text-gray-500">
+          <div className="w-full bg-white/8 rounded-full h-px mb-3">
+            <div className="bg-white h-px rounded-full transition-all" style={{ width: `${confidenceScore}%` }} />
+          </div>
+          <p className="text-white/25 text-xs">
             {confidenceScore >= 80
               ? 'Strong signal. High confidence in these patterns.'
               : confidenceScore >= 60
-              ? 'Good signal. A few more data points would sharpen this.'
-              : 'Early signal. Complete more of the assessment to increase accuracy.'}
+              ? 'Good signal. More data points will sharpen the edges.'
+              : 'Early signal. Complete more of the assessment to increase resolution.'}
           </p>
         </div>
-      </div>
 
-      {/* Work style synthesis */}
-      <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-8">
-        <h2 className="text-xs font-semibold text-blue-700 uppercase tracking-widest mb-3">Your Work Style</h2>
-        <p className="text-base leading-relaxed text-gray-800">{workStyleSynthesis}</p>
-      </div>
+        {/* Core statement */}
+        {interview_profiles?.overall_summary && (
+          <div className="mb-16">
+            <div className="border-l border-white/20 pl-8 py-2">
+              <p className="text-white/30 text-xs uppercase tracking-widest mb-4">Core Identity</p>
+              <p className="text-white text-xl font-light leading-relaxed">
+                {interview_profiles.overall_summary}
+              </p>
+            </div>
+          </div>
+        )}
 
-      {/* Interview-derived profiles */}
-      {interview_profiles && (
-        <div className="mb-8">
-          <h2 className="text-lg font-bold mb-1">Your cognitive fingerprint</h2>
-          <p className="text-sm text-gray-500 mb-4">{interview_profiles.overall_summary}</p>
-          <div className="space-y-4">
-            {(['compression_profile', 'friction_profile', 'execution_profile', 'contradiction_profile'] as const).map((key) => {
-              const probe = interview_profiles[key];
-              const actionable = ACTIONABLE[key]?.(probe.preference);
-              return (
-                <div key={key} className="border border-gray-200 rounded-xl p-4">
-                  <div className="flex items-start justify-between mb-1">
-                    <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                      {PROBE_LABELS[key]}
+        {/* Work style synthesis */}
+        {workStyleSynthesis && (
+          <div className="mb-16">
+            <p className="text-white/30 text-xs uppercase tracking-widest mb-4">Work Style Synthesis</p>
+            <div className="border border-white/10 rounded-2xl p-6 bg-white/[0.02]">
+              <p className="text-white/80 text-base leading-relaxed">{workStyleSynthesis}</p>
+            </div>
+          </div>
+        )}
+
+        {/* The four cognitive dimensions */}
+        {interview_profiles && (
+          <div className="mb-16">
+            <p className="text-white/30 text-xs uppercase tracking-widest mb-6">The Four Dimensions</p>
+            <div className="space-y-4">
+              {(['compression_profile', 'friction_profile', 'execution_profile', 'contradiction_profile'] as const).map((key) => {
+                const probe = interview_profiles[key];
+                const meta = PROBE_META[key];
+                const pref = probe.preference;
+                const leverage = meta?.leverage?.[pref];
+                const watchfor = meta?.watchfor?.[pref];
+
+                return (
+                  <div key={key} className="border border-white/10 rounded-2xl p-6 bg-white/[0.02]">
+                    <div className="flex items-start justify-between mb-4">
+                      <div>
+                        <p className="text-white/30 text-xs uppercase tracking-widest mb-1">{meta?.label}</p>
+                        <p className="text-white/20 text-xs">{meta?.question}</p>
+                      </div>
+                      <span className="text-xs font-medium text-white bg-white/10 px-3 py-1 rounded-full capitalize border border-white/15">
+                        {pref}
+                      </span>
                     </div>
-                    <span className="text-xs font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full capitalize">
-                      {probe.preference}
-                    </span>
+
+                    <p className="text-white/70 text-sm leading-relaxed mb-5 pb-5 border-b border-white/8">
+                      {probe.description}
+                    </p>
+
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      {leverage && (
+                        <div>
+                          <p className="text-white/25 text-xs uppercase tracking-widest mb-2">Leverage this</p>
+                          <p className="text-white/60 text-xs leading-relaxed">{leverage}</p>
+                        </div>
+                      )}
+                      {watchfor && (
+                        <div>
+                          <p className="text-white/25 text-xs uppercase tracking-widest mb-2">Watch for</p>
+                          <p className="text-white/60 text-xs leading-relaxed">{watchfor}</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <p className="text-sm text-gray-700 mb-2">{probe.description}</p>
-                  {actionable && (
-                    <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                      <p className="text-xs text-amber-800">
-                        <strong>What this means:</strong> {actionable}
-                      </p>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Behavioral measurements */}
+        {Object.keys(game_measurements).length > 0 && (
+          <div className="mb-16">
+            <div className="flex items-center justify-between mb-6">
+              <p className="text-white/30 text-xs uppercase tracking-widest">Behavioral Measurements</p>
+              {Object.keys(dialog_fills).length > 0 && (
+                <p className="text-white/20 text-xs">
+                  <span className="text-white/40">◌</span> inferred from dialog
+                </p>
+              )}
+            </div>
+            <div className="space-y-3">
+              {Object.entries(game_measurements).map(([key, value]) => {
+                const isInferred = key in dialog_fills;
+                const label = MEASUREMENT_LABELS[key] || key.split('_').map(w => w[0].toUpperCase() + w.slice(1)).join(' ');
+                const description = MEASUREMENT_DESCRIPTIONS[key]?.[value];
+
+                return (
+                  <div key={key} className="border border-white/8 rounded-xl p-5 bg-white/[0.015] flex items-start justify-between gap-6">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <p className="text-white/30 text-xs uppercase tracking-widest">{label}</p>
+                        {isInferred && <span className="text-white/25 text-xs">◌ inferred</span>}
+                      </div>
+                      {description && (
+                        <p className="text-white/50 text-xs leading-relaxed mt-1">{description}</p>
+                      )}
                     </div>
-                  )}
-                </div>
-              );
-            })}
+                    <span className="text-white text-sm font-medium whitespace-nowrap">{value}</span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Synergies */}
-      {insights.filter((i) => i.type === 'synergy').length > 0 && (
-        <div className="mb-8">
-          <h2 className="text-lg font-bold mb-4">What amplifies you</h2>
-          <div className="space-y-4">
-            {insights.filter((i) => i.type === 'synergy').map((insight, idx) => (
-              <InsightCard
-                key={idx}
-                insight={insight}
-                type="synergy"
-                idx={idx}
-                feedback={feedback[idx]}
-                onFeedback={(v) => logFeedback(idx, v)}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Contradictions */}
-      {insights.filter((i) => i.type === 'contradiction').length > 0 && (
-        <div className="mb-8">
-          <h2 className="text-lg font-bold mb-4">Your productive tensions</h2>
-          <p className="text-sm text-gray-500 mb-4">
-            These aren't flaws — they're places where your preferences pull in opposite directions. Knowing them is an edge.
-          </p>
-          <div className="space-y-4">
-            {insights.filter((i) => i.type === 'contradiction').map((insight, idx) => {
-              const globalIdx = insights.filter((i) => i.type === 'synergy').length + idx;
-              return (
-                <InsightCard
-                  key={globalIdx}
+        {/* Pattern intelligence — synergies */}
+        {synergies.length > 0 && (
+          <div className="mb-16">
+            <p className="text-white/30 text-xs uppercase tracking-widest mb-2">What amplifies you</p>
+            <p className="text-white/20 text-xs mb-6">Patterns where your traits reinforce each other</p>
+            <div className="space-y-4">
+              {synergies.map((insight, idx) => (
+                <PatternCard
+                  key={idx}
                   insight={insight}
-                  type="contradiction"
-                  idx={globalIdx}
-                  feedback={feedback[globalIdx]}
-                  onFeedback={(v) => logFeedback(globalIdx, v)}
+                  type="synergy"
+                  globalIdx={idx}
+                  feedback={feedback[idx]}
+                  onFeedback={(v) => logFeedback(idx, v)}
                 />
-              );
-            })}
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Game measurements */}
-      {Object.keys(game_measurements).length > 0 && (
-        <div className="mb-8">
-          <h2 className="text-lg font-bold mb-1">Assessment results</h2>
-          {Object.keys(dialog_fills).length > 0 && (
-            <p className="text-xs text-gray-400 mb-4">
-              Values marked <span className="text-indigo-500 font-medium">inferred</span> came from your Nova dialog answers, not the game. Complete the game to lock them in.
-            </p>
-          )}
-          <div className="grid grid-cols-2 gap-3">
-            {Object.entries(game_measurements).map(([key, value]) => {
-              const isDialogFill = key in dialog_fills;
-              return (
-                <div key={key} className={`border rounded-lg p-3 ${isDialogFill ? 'bg-indigo-50 border-indigo-200' : 'bg-gray-50 border-gray-200'}`}>
-                  <div className="flex items-center justify-between mb-1">
-                    <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{formatKey(key)}</div>
-                    {isDialogFill && <span className="text-xs text-indigo-500 font-medium">inferred</span>}
-                  </div>
-                  <div className="text-sm font-medium text-gray-900">{value}</div>
-                </div>
-              );
-            })}
+        {/* Pattern intelligence — contradictions */}
+        {contradictions.length > 0 && (
+          <div className="mb-16">
+            <p className="text-white/30 text-xs uppercase tracking-widest mb-2">Your productive tensions</p>
+            <p className="text-white/20 text-xs mb-6">Where your preferences pull in opposite directions — knowing these is an edge</p>
+            <div className="space-y-4">
+              {contradictions.map((insight, idx) => {
+                const globalIdx = synergies.length + idx;
+                return (
+                  <PatternCard
+                    key={globalIdx}
+                    insight={insight}
+                    type="contradiction"
+                    globalIdx={globalIdx}
+                    feedback={feedback[globalIdx]}
+                    onFeedback={(v) => logFeedback(globalIdx, v)}
+                  />
+                );
+              })}
+            </div>
           </div>
+        )}
+
+        {/* Signal scores */}
+        <div className="grid grid-cols-2 gap-4 mb-12">
+          <ScoreMeter label="Activation Alignment" score={activationMatchScore} />
+          <ScoreMeter label="Profile Confidence" score={confidenceScore} />
         </div>
-      )}
 
-      {/* Scores */}
-      <div className="mb-8 grid grid-cols-2 gap-4">
-        <ScoreBar label="Activation Alignment" score={activationMatchScore} color="bg-green-500"
-          tooltip="How well your chosen activation pattern matches your cognitive profile" />
-        <ScoreBar label="Profile Confidence" score={confidenceScore} color="bg-blue-500"
-          tooltip="Strength of detected behavioral patterns across all data sources" />
-      </div>
-
-      <div className="flex gap-4">
+        {/* CTA */}
         <button
           onClick={() => onComplete?.()}
-          className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-xl transition-colors"
+          className="w-full bg-white text-black font-semibold py-4 px-6 rounded-xl hover:bg-white/90 transition-colors text-sm tracking-wide"
         >
-          Go to Dashboard
+          Go to Dashboard →
         </button>
-      </div>
 
+      </div>
     </div>
   );
 }
 
-function InsightCard({
-  insight, type, idx, feedback, onFeedback,
+function PatternCard({
+  insight, type, globalIdx, feedback, onFeedback,
 }: {
   insight: PatternInsight;
   type: 'synergy' | 'contradiction';
-  idx: number;
+  globalIdx: number;
   feedback?: Feedback;
   onFeedback: (v: Feedback) => void;
 }) {
   const isSynergy = type === 'synergy';
+
   return (
-    <div className={`border rounded-xl p-4 ${isSynergy ? 'border-green-200 bg-green-50' : 'border-amber-200 bg-amber-50'}`}>
-      <div className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">
-        {insight.attributes.map(formatKey).join(' · ')}
-      </div>
-      <p className={`text-sm font-medium mb-2 ${isSynergy ? 'text-green-900' : 'text-amber-900'}`}>
-        {insight.insight}
-      </p>
-      <div className="bg-white bg-opacity-60 rounded-lg p-3 mb-3">
-        <p className="text-sm text-gray-700">
-          <strong>So:</strong> {insight.implication}
+    <div className="border border-white/10 rounded-2xl p-6 bg-white/[0.02]">
+      <div className="flex items-center gap-2 mb-3">
+        <div className={`w-1.5 h-1.5 rounded-full ${isSynergy ? 'bg-white/60' : 'bg-white/30'}`} />
+        <p className="text-white/25 text-xs uppercase tracking-widest">
+          {isSynergy ? 'Amplifier' : 'Tension'} · {insight.attributes.map(k => k.split('_').map(w => w[0].toUpperCase() + w.slice(1)).join(' ')).join(' × ')}
         </p>
       </div>
 
-      {/* Validation */}
-      <div className="flex items-center gap-2">
-        <span className="text-xs text-gray-500">Does this feel right?</span>
+      <p className="text-white text-sm font-medium leading-relaxed mb-4">{insight.insight}</p>
+
+      <div className="border-t border-white/8 pt-4 mb-4">
+        <p className="text-white/25 text-xs uppercase tracking-widest mb-2">So what</p>
+        <p className="text-white/60 text-sm leading-relaxed">{insight.implication}</p>
+      </div>
+
+      <div className="flex items-center gap-3">
+        <span className="text-white/25 text-xs">Does this resonate?</span>
         {(['yes', 'partial', 'no'] as Feedback[]).map((v) => (
           <button
             key={v}
             onClick={() => onFeedback(v)}
-            className={`text-xs px-2 py-0.5 rounded-full border transition-colors ${
+            className={`text-xs px-2.5 py-1 rounded-full border transition-all ${
               feedback === v
-                ? 'bg-gray-800 text-white border-gray-800'
-                : 'border-gray-300 text-gray-500 hover:border-gray-500'
+                ? 'bg-white text-black border-white'
+                : 'border-white/15 text-white/30 hover:border-white/40 hover:text-white/60'
             }`}
           >
             {v === 'yes' ? 'Yes' : v === 'partial' ? 'Partially' : 'Not really'}
@@ -313,20 +464,17 @@ function InsightCard({
   );
 }
 
-function ScoreBar({ label, score, color, tooltip }: { label: string; score: number; color: string; tooltip: string }) {
+function ScoreMeter({ label, score }: { label: string; score: number }) {
   return (
-    <div className="bg-gray-50 border border-gray-200 rounded-xl p-4" title={tooltip}>
-      <div className="text-xs font-semibold text-gray-600 mb-2">{label}</div>
-      <div className="flex items-center gap-2">
-        <div className="flex-1 bg-gray-200 rounded-full h-2">
-          <div className={`${color} h-2 rounded-full`} style={{ width: `${score}%` }} />
-        </div>
-        <div className="text-sm font-bold text-gray-900">{score}%</div>
+    <div className="border border-white/10 rounded-2xl p-5 bg-white/[0.02]">
+      <p className="text-white/30 text-xs uppercase tracking-widest mb-3">{label}</p>
+      <div className="flex items-end gap-3 mb-3">
+        <span className="text-white text-3xl font-light tabular-nums">{score}</span>
+        <span className="text-white/30 text-sm mb-1">/ 100</span>
+      </div>
+      <div className="w-full bg-white/8 rounded-full h-px">
+        <div className="bg-white/60 h-px rounded-full" style={{ width: `${score}%` }} />
       </div>
     </div>
   );
-}
-
-function formatKey(key: string): string {
-  return key.split('_').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 }
