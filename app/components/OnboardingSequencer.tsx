@@ -12,12 +12,17 @@ import NovaDialog from './NovaDialog';
 type Phase = 'games' | 'context' | 'setup' | 'relationship' | 'facts' | 'nova_dialog';
 
 const HISTORY_KEY = 'onboarding_phase_history';
+// Form data keys to clear when starting fresh
+const FORM_KEYS = ['onboarding_context', 'onboarding_setup', 'onboarding_game_index'];
 
 function loadHistory(): Phase[] {
   if (typeof window === 'undefined') return ['games'];
   try {
     const saved = sessionStorage.getItem(HISTORY_KEY);
-    return saved ? JSON.parse(saved) : ['games'];
+    if (saved) return JSON.parse(saved);
+    // No saved history = fresh start: clear form data from any previous session
+    FORM_KEYS.forEach((k) => { try { sessionStorage.removeItem(k); } catch {} });
+    return ['games'];
   } catch { return ['games']; }
 }
 
@@ -87,6 +92,7 @@ export default function OnboardingSequencer() {
         <NovaDialog
           onComplete={() => {
             sessionStorage.removeItem(HISTORY_KEY);
+            FORM_KEYS.forEach((k) => { try { sessionStorage.removeItem(k); } catch {} });
             window.location.href = '/dashboard';
           }}
           onBack={goBack}

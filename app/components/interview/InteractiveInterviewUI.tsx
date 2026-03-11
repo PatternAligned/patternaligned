@@ -8,7 +8,6 @@ interface InterviewTurn {
   probe: string;
   question: string;
   answer?: string;
-  timestamp?: number;
 }
 
 export default function InteractiveInterviewUI() {
@@ -18,53 +17,39 @@ export default function InteractiveInterviewUI() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [turns, setTurns] = useState<InterviewTurn[]>([]);
   const [currentQuestion, setCurrentQuestion] = useState<string>('');
-  const [currentProbe, setCurrentProbe] = useState<string>('');
   const [userAnswer, setUserAnswer] = useState('');
   const [isComplete, setIsComplete] = useState(false);
   const [insights, setInsights] = useState<any>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/auth/signin');
-    }
+    if (status === 'unauthenticated') router.push('/auth/signin');
   }, [status, router]);
 
   useEffect(() => {
-    if (status === 'authenticated' && !sessionId) {
-      startInterview();
-    }
+    if (status === 'authenticated' && !sessionId) startInterview();
   }, [status, sessionId]);
 
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, [turns, currentQuestion]);
+    scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [turns, loading, isComplete]);
 
   const startInterview = async () => {
     setLoading(true);
     try {
-      const response = await fetch(
+      const res = await fetch(
         `${process.env.NEXT_PUBLIC_RENDER_BACKEND_URL}/behavioral/interview/start`,
         {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-user-email': session?.user?.email || ''
-          }
+          headers: { 'Content-Type': 'application/json', 'x-user-email': session?.user?.email || '' },
         }
       );
-
-      if (!response.ok) throw new Error('Failed to start interview');
-
-      const data = await response.json();
+      if (!res.ok) throw new Error('Failed to start interview');
+      const data = await res.json();
       setSessionId(data.sessionId);
-      setCurrentProbe(data.probe);
       setCurrentQuestion(data.question);
       setTurns([{ probe: data.probe, question: data.question }]);
-    } catch (error) {
-      console.error('Error starting interview:', error);
+    } catch {
       alert('Failed to start interview. Please try again.');
     } finally {
       setLoading(false);
@@ -75,42 +60,34 @@ export default function InteractiveInterviewUI() {
     e.preventDefault();
     if (!userAnswer.trim() || !sessionId) return;
 
+    const answer = userAnswer;
+    setUserAnswer('');
     setLoading(true);
-    try {
-      const newTurns = [...turns];
-      newTurns[newTurns.length - 1].answer = userAnswer;
-      setTurns(newTurns);
 
-      const response = await fetch(
+    // Immediately show answer in chat
+    const newTurns = [...turns];
+    newTurns[newTurns.length - 1] = { ...newTurns[newTurns.length - 1], answer };
+    setTurns(newTurns);
+
+    try {
+      const res = await fetch(
         `${process.env.NEXT_PUBLIC_RENDER_BACKEND_URL}/behavioral/interview/answer`,
         {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-user-email': session?.user?.email || ''
-          },
-          body: JSON.stringify({
-            sessionId,
-            answer: userAnswer
-          })
+          headers: { 'Content-Type': 'application/json', 'x-user-email': session?.user?.email || '' },
+          body: JSON.stringify({ sessionId, answer }),
         }
       );
-
-      if (!response.ok) throw new Error('Failed to submit answer');
-
-      const data = await response.json();
+      if (!res.ok) throw new Error('Failed to submit answer');
+      const data = await res.json();
 
       if (data.isComplete) {
-        completeInterview();
+        await completeInterview();
       } else {
         setTurns([...newTurns, { probe: data.nextProbe, question: data.nextQuestion }]);
-        setCurrentProbe(data.nextProbe);
         setCurrentQuestion(data.nextQuestion);
       }
-
-      setUserAnswer('');
-    } catch (error) {
-      console.error('Error submitting answer:', error);
+    } catch {
       alert('Failed to submit answer. Please try again.');
     } finally {
       setLoading(false);
@@ -118,76 +95,62 @@ export default function InteractiveInterviewUI() {
   };
 
   const completeInterview = async () => {
-    setLoading(true);
     try {
-      const response = await fetch(
+      const res = await fetch(
         `${process.env.NEXT_PUBLIC_RENDER_BACKEND_URL}/behavioral/interview/complete`,
         {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-user-email': session?.user?.email || ''
-          },
-          body: JSON.stringify({ sessionId })
+          headers: { 'Content-Type': 'application/json', 'x-user-email': session?.user?.email || '' },
+          body: JSON.stringify({ sessionId }),
         }
       );
-
-      if (!response.ok) throw new Error('Failed to complete interview');
-
-      const data = await response.json();
+      if (!res.ok) throw new Error('Failed to complete interview');
+      const data = await res.json();
       setInsights(data.claudeInsights);
       setIsComplete(true);
-    } catch (error) {
-      console.error('Error completing interview:', error);
+    } catch {
       alert('Failed to synthesize insights. Please try again.');
-    } finally {
-      setLoading(false);
     }
-  };
-
-  const continueToGames = () => {
-    router.push('/onboarding/cognitive');
   };
 
   if (status === 'loading') {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-silver/30 border-t-white rounded-full animate-spin mx-auto mb-4"></div>
-          <p>Loading interview...</p>
-        </div>
+        <div className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin" />
       </div>
     );
   }
 
-  if (!session) {
-    return null;
-  }
+  if (!session) return null;
 
   return (
-    <div className="min-h-screen bg-black text-white p-4 sm:p-8">
+    <div className="min-h-screen bg-black text-white px-4 sm:px-8 py-12">
       <div className="max-w-2xl mx-auto">
+
         <div className="mb-8">
-          <h1 className="text-3xl sm:text-4xl font-light mb-2">Cognitive Fingerprint</h1>
-          <p className="text-silver text-sm sm:text-base">
-            Let's understand how you think. Answer thoroughly and honestly — the more detail you provide, the better Nova learns your tone, vibe, interaction style, and decision-making pattern.
+          <p className="text-white/25 text-xs uppercase tracking-widest mb-3">PatternAligned</p>
+          <h1 className="text-3xl font-light mb-2">Cognitive Fingerprint</h1>
+          <p className="text-white/40 text-sm leading-relaxed">
+            Answer thoroughly and honestly — the more detail you provide, the better Nova learns your tone, vibe, interaction style, and decision-making pattern.
           </p>
         </div>
 
-        <div className="bg-gray-900/30 border border-silver/20 rounded-lg p-6 sm:p-8 mb-8 h-96 sm:h-[500px] overflow-y-auto flex flex-col">
+        {/* Chat scroll area */}
+        <div className="border border-white/8 rounded-2xl p-5 sm:p-7 mb-6 min-h-[320px] max-h-[520px] overflow-y-auto flex flex-col gap-5" style={{ backgroundColor: '#0a0a0a' }}>
           {turns.map((turn, idx) => (
-            <div key={idx} className="mb-6 flex flex-col">
-              <div className="mb-4">
-                <div className="text-silver text-xs mb-2 font-light">Claude</div>
-                <div className="bg-silver/5 border border-silver/10 rounded p-4 text-sm sm:text-base leading-relaxed">
+            <div key={idx} className="flex flex-col gap-4">
+              {/* Nova question */}
+              <div>
+                <div className="text-white/25 text-xs mb-2">Nova</div>
+                <div className="border border-white/8 rounded-xl p-4 text-sm text-white/80 leading-relaxed bg-white/[0.02]">
                   {turn.question}
                 </div>
               </div>
-
+              {/* User answer */}
               {turn.answer && (
-                <div className="ml-8">
-                  <div className="text-silver text-xs mb-2 font-light">You</div>
-                  <div className="rounded p-4 text-sm sm:text-base leading-relaxed" style={{ backgroundColor: '#1a1a1a', border: '1px solid #c0c0c0', color: '#e0e0e0' }}>
+                <div className="ml-6 sm:ml-10">
+                  <div className="text-white/25 text-xs mb-2">You</div>
+                  <div className="rounded-xl p-4 text-sm leading-relaxed" style={{ backgroundColor: '#1a1a1a', border: '1px solid rgba(192,192,192,0.25)', color: '#e0e0e0' }}>
                     {turn.answer}
                   </div>
                 </div>
@@ -195,63 +158,75 @@ export default function InteractiveInterviewUI() {
             </div>
           ))}
 
+          {/* Loading indicator */}
           {loading && (
-            <div className="flex items-center gap-3 text-white/40 text-sm py-2">
+            <div className="flex items-center gap-3 text-white/30 text-xs py-1">
               <div className="flex gap-1">
-                <div className="w-1.5 h-1.5 bg-white/40 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                <div className="w-1.5 h-1.5 bg-white/40 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                <div className="w-1.5 h-1.5 bg-white/40 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                <div className="w-1.5 h-1.5 bg-white/30 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                <div className="w-1.5 h-1.5 bg-white/30 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                <div className="w-1.5 h-1.5 bg-white/30 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
               </div>
               <span>Analyzing your response...</span>
+            </div>
+          )}
+
+          {/* Inline completion summary */}
+          {isComplete && insights && (
+            <div className="mt-2">
+              <div className="text-white/25 text-xs mb-2">Nova</div>
+              <div className="border border-white/10 rounded-xl p-5 bg-white/[0.03]">
+                <p className="text-white/70 text-sm leading-relaxed mb-3">{insights.overall_summary}</p>
+                <div className="flex items-center gap-2 pt-2 border-t border-white/8">
+                  <div className="flex-1 bg-white/8 h-px rounded-full">
+                    <div className="h-px rounded-full" style={{ width: `${(insights.confidence_score * 100).toFixed(0)}%`, backgroundColor: '#c0c0c0' }} />
+                  </div>
+                  <span className="text-white/25 text-xs tabular-nums shrink-0">{(insights.confidence_score * 100).toFixed(0)}% signal</span>
+                </div>
+              </div>
             </div>
           )}
 
           <div ref={scrollRef} />
         </div>
 
-        {isComplete && insights ? (
-          <div className="space-y-6">
-            <div className="bg-silver/5 border border-silver/20 rounded-lg p-6 sm:p-8">
-              <h2 className="text-xl font-light mb-4">Your Cognitive Profile</h2>
-              <p className="text-silver text-sm sm:text-base leading-relaxed mb-4">
-                {insights.overall_summary}
-              </p>
-              <div className="text-xs text-silver/60">
-                Confidence: {(insights.confidence_score * 100).toFixed(0)}%
-              </div>
-            </div>
-
-            <button
-              onClick={continueToGames}
-              className="w-full py-3 bg-white text-black font-light rounded hover:bg-silver transition mt-8"
-            >
-              Continue to Behavioral Games
-            </button>
-          </div>
+        {/* Input form or continue button */}
+        {isComplete ? (
+          <button
+            onClick={() => router.push('/onboarding/cognitive')}
+            className="w-full py-3.5 bg-white text-black font-semibold rounded-xl hover:bg-white/90 transition-colors"
+          >
+            Continue to Behavioral Games →
+          </button>
         ) : (
           !loading && currentQuestion && (
-            <form onSubmit={submitAnswer} className="flex flex-col gap-4">
+            <form onSubmit={submitAnswer} className="flex flex-col gap-3">
               <textarea
                 value={userAnswer}
                 onChange={(e) => setUserAnswer(e.target.value)}
                 placeholder="Type your answer here... Be natural and honest."
-                style={{ backgroundColor: '#1a1a1a', borderColor: '#c0c0c0', color: '#e0e0e0' }}
-                className="w-full p-4 border rounded resize-none focus:outline-none transition text-sm sm:text-base placeholder-white/30"
+                style={{ backgroundColor: '#1a1a1a', borderColor: 'rgba(192,192,192,0.3)', color: '#e0e0e0' }}
+                className="w-full p-4 border rounded-xl resize-none focus:outline-none focus:border-white/50 transition text-sm placeholder-white/20"
                 rows={4}
                 disabled={loading}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                    e.preventDefault();
+                    if (userAnswer.trim()) submitAnswer(e as any);
+                  }
+                }}
               />
-
               <button
                 type="submit"
                 disabled={!userAnswer.trim() || loading}
-                className="py-3 bg-white text-black font-light rounded disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/90 transition"
+                className="py-3 bg-white text-black font-semibold rounded-xl disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/90 transition-colors"
               >
                 {loading ? 'Analyzing...' : 'Submit Answer'}
               </button>
-
+              <p className="text-white/20 text-xs text-center">⌘↵ to submit</p>
             </form>
           )
         )}
+
       </div>
     </div>
   );
