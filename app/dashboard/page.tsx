@@ -1,10 +1,10 @@
 'use client';
 
-import { useSession, signOut } from 'next-auth/react';
+import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import Nova from '@/app/components/Nova';
+import WorkspaceLayout from '@/app/components/WorkspaceLayout';
 import NovaObservations from '@/app/components/NovaObservations';
 import PatternTimeline from '@/app/components/PatternTimeline';
 import ThresholdAlerts from '@/app/components/ThresholdAlerts';
@@ -19,7 +19,6 @@ interface CorrelationData {
     contradiction_profile: { preference: string; description: string };
   } | null;
   game_measurements: Record<string, string>;
-  profile: Record<string, string>;
   correlationResult: {
     insights: Array<{ type: string; attributes: string[]; insight: string; implication: string }>;
     workStyleSynthesis: string;
@@ -45,6 +44,9 @@ const TOOL_LABELS: Record<string, string> = {
   vscode: 'VS Code', claude_code: 'Claude Code', cursor: 'Cursor',
   terminal: 'Terminal', github: 'GitHub', slack: 'Slack',
   linear: 'Linear', notion: 'Notion', figma: 'Figma', vercel: 'Vercel',
+  render: 'Render', supabase: 'Supabase', postgres: 'PostgreSQL',
+  docker: 'Docker', aws: 'AWS', gcp: 'GCP', jira: 'Jira',
+  airtable: 'Airtable', retool: 'Retool', postman: 'Postman',
 };
 
 export default function Dashboard() {
@@ -54,14 +56,12 @@ export default function Dashboard() {
   const [goalProgress, setGoalProgress] = useState<GoalProgress[]>([]);
   const [preferences, setPreferences] = useState<Preferences | null>(null);
   const [dataLoading, setDataLoading] = useState(true);
-  const [novaOpen, setNovaOpen] = useState(false);
   const [novaPreFill, setNovaPreFill] = useState<string | undefined>(undefined);
 
   const handleAskNova = (prompt: string) => {
     setNovaPreFill(prompt);
-    setNovaOpen(true);
-    // Scroll to top where Nova panel is
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // WorkspaceLayout handles opening Nova
+    window.dispatchEvent(new CustomEvent('open-nova', { detail: { prompt } }));
   };
 
   useEffect(() => {
@@ -96,206 +96,192 @@ export default function Dashboard() {
   const gameMeasurements = correlationData?.game_measurements || {};
   const hasProfile = !dataLoading && (profile || Object.keys(gameMeasurements).length > 0);
   const confidence = profile?.confidenceScore ?? 0;
-  const activation = profile?.activationMatchScore ?? 0;
 
   const probeLabels: Record<string, string> = {
     compression_profile: 'Information',
-    friction_profile: 'Obstacles',
+    friction_profile: 'Friction',
     execution_profile: 'Execution',
     contradiction_profile: 'Conflict',
   };
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <div className="max-w-6xl mx-auto px-6 py-10">
+    <WorkspaceLayout
+      onProjectSelect={(p) => router.push(`/dashboard/workspace/${p.id}`)}
+    >
+      <div className="max-w-5xl mx-auto px-6 py-10">
 
-        {/* Header */}
-        <div className="flex justify-between items-center mb-10">
-          <div>
-            <h1 className="text-3xl font-light tracking-tight">PatternAligned</h1>
-            <p className="text-white/40 text-xs tracking-widest uppercase mt-1">Behavioral Intelligence</p>
+        {/* Profile header */}
+        <div className="flex items-start gap-5 mb-10">
+          {session.user?.image && (
+            <img src={session.user.image} className="w-12 h-12 rounded-xl border border-white/10 object-cover shrink-0" alt="" />
+          )}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-3 mb-1">
+              <h1 className="text-xl font-light text-white">{session.user?.name || 'User'}</h1>
+              <span className="text-white/20 text-xs">·</span>
+              <Link href="/dashboard/profile">
+                <span className="text-white/30 text-xs hover:text-white/60 transition-colors cursor-pointer">
+                  View full profile →
+                </span>
+              </Link>
+            </div>
+            <p className="text-white/35 text-sm">{session.user?.email}</p>
+            {interviewProfiles?.overall_summary && (
+              <p className="text-white/55 text-sm mt-2 leading-relaxed max-w-xl">{interviewProfiles.overall_summary}</p>
+            )}
           </div>
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => setNovaOpen(!novaOpen)}
-              className={`px-5 py-2 text-sm rounded-full border transition-all ${
-                novaOpen
-                  ? 'bg-white text-black border-white'
-                  : 'border-white/30 text-white hover:border-white/70'
-              }`}
-            >
-              {novaOpen ? 'Close Nova' : 'Open Nova'}
-            </button>
-            <Link href="/dashboard/profile">
-              <button className="px-5 py-2 text-sm border border-white/20 hover:border-white/50 rounded-full transition-colors text-white/70 hover:text-white">
-                Profile
-              </button>
-            </Link>
-            <button
-              onClick={() => signOut({ redirect: true, callbackUrl: '/auth/signin' })}
-              className="px-5 py-2 text-sm border border-white/20 hover:border-white/50 rounded-full transition-colors text-white/70 hover:text-white"
-            >
-              Exit
-            </button>
+          <div className="shrink-0 text-right">
+            <div className="text-3xl font-light tabular-nums text-white">{confidence}%</div>
+            <div className="text-white/30 text-xs mt-0.5">profile signal</div>
           </div>
         </div>
 
-        {/* Nova Panel */}
-        {novaOpen && (
-          <div className="mb-10 border border-white/10 rounded-2xl bg-white/5 backdrop-blur-xl overflow-hidden" style={{ height: '480px' }}>
-            <div className="border-b border-white/10 px-5 py-3 flex items-center gap-2">
-              <div className="w-2 h-2 bg-white/60 rounded-full animate-pulse" />
-              <span className="text-sm text-white/70 font-medium">Nova</span>
-              <span className="text-xs text-white/30 ml-2">tuned to your profile</span>
-            </div>
-            <div className="h-[calc(100%-48px)] bg-black">
-              <Nova initialMessage={novaPreFill} />
-            </div>
-          </div>
-        )}
+        <div className="grid grid-cols-12 gap-5">
 
-        <div className="grid grid-cols-12 gap-6">
+          {/* Left: behavioral profile */}
+          <div className="col-span-12 lg:col-span-8 space-y-5">
 
-          {/* Left column: profile + confidence */}
-          <div className="col-span-12 lg:col-span-8 space-y-6">
-
-            {/* Profile header */}
-            <div className="border border-white/10 rounded-2xl p-6 bg-white/3">
-              <div className="flex items-start gap-4">
-                {session.user?.image && (
-                  <img src={session.user.image} className="w-14 h-14 rounded-xl object-cover border border-white/10" alt="" />
-                )}
-                <div className="flex-1">
-                  <h2 className="text-xl font-light">{session.user?.name || 'User'}</h2>
-                  <p className="text-white/40 text-sm">{session.user?.email}</p>
-                  {interviewProfiles?.overall_summary && (
-                    <p className="text-white/70 text-sm mt-3 leading-relaxed">{interviewProfiles.overall_summary}</p>
-                  )}
+            {/* Interview probe tiles */}
+            {interviewProfiles && (
+              <div className="border border-white/8 rounded-2xl p-5">
+                <p className="text-white/25 text-xs uppercase tracking-widest mb-4">Interview Profile</p>
+                <div className="grid grid-cols-2 gap-3">
+                  {(['compression_profile', 'friction_profile', 'execution_profile', 'contradiction_profile'] as const).map((key) => (
+                    <div key={key} className="bg-white/[0.03] rounded-xl p-4 border border-white/[0.06]">
+                      <div className="text-white/30 text-xs mb-1.5">{probeLabels[key]}</div>
+                      <div className="text-white text-sm font-medium capitalize mb-1">{interviewProfiles[key].preference}</div>
+                      <p className="text-white/40 text-xs leading-relaxed line-clamp-2">{interviewProfiles[key].description}</p>
+                    </div>
+                  ))}
                 </div>
-                <div className="text-right">
-                  <div className="text-3xl font-light">{confidence}%</div>
-                  <div className="text-white/40 text-xs">confidence</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Confidence breakdown */}
-            {!dataLoading && (
-              <div className="border border-white/10 rounded-2xl p-6 bg-white/3">
-                <h3 className="text-xs uppercase tracking-widest text-white/40 mb-5">Profile Coverage</h3>
-                <div className="grid grid-cols-2 gap-4 mb-5">
-                  <ConfidenceBar label="Overall Confidence" pct={confidence} color="bg-white/60" />
-                  <ConfidenceBar label="Activation Alignment" pct={activation} color="bg-white/40" />
-                </div>
-
-                {/* Per-probe from interview */}
-                {interviewProfiles && (
-                  <div className="grid grid-cols-2 gap-3 mt-4">
-                    {(['compression_profile', 'friction_profile', 'execution_profile', 'contradiction_profile'] as const).map((key) => (
-                      <div key={key} className="bg-white/5 rounded-xl p-3">
-                        <div className="text-xs text-white/40 mb-1">{probeLabels[key]}</div>
-                        <div className="text-sm font-medium capitalize">{interviewProfiles[key].preference}</div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Game measurements */}
-                {Object.keys(gameMeasurements).length > 0 && (
-                  <div className="grid grid-cols-3 gap-3 mt-4">
-                    {Object.entries(gameMeasurements).slice(0, 6).map(([k, v]) => (
-                      <div key={k} className="bg-white/5 rounded-xl p-3">
-                        <div className="text-xs text-white/40 mb-1">{formatKey(k)}</div>
-                        <div className="text-sm font-medium">{v}</div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {!hasProfile && (
-                  <div className="text-center py-6">
-                    <p className="text-white/40 text-sm mb-4">No profile data yet.</p>
-                    <Link href="/onboarding/cognitive">
-                      <span className="text-sm border border-white/30 px-4 py-2 rounded-full hover:border-white/60 transition-colors">
-                        Start Assessment →
-                      </span>
-                    </Link>
-                  </div>
-                )}
               </div>
             )}
 
-            {/* Insights */}
+            {/* Game measurements */}
+            {Object.keys(gameMeasurements).length > 0 && (
+              <div className="border border-white/8 rounded-2xl p-5">
+                <p className="text-white/25 text-xs uppercase tracking-widest mb-4">Cognitive Assessments</p>
+                <div className="grid grid-cols-3 gap-3">
+                  {Object.entries(gameMeasurements).map(([k, v]) => (
+                    <div key={k} className="bg-white/[0.03] rounded-xl p-4 border border-white/[0.06]">
+                      <div className="text-white/30 text-xs mb-1">{formatKey(k)}</div>
+                      <div className="text-white text-sm font-medium">{v}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Behavioral pattern insights */}
             {profile?.insights && profile.insights.length > 0 && (
-              <div className="border border-white/10 rounded-2xl p-6 bg-white/3">
-                <h3 className="text-xs uppercase tracking-widest text-white/40 mb-5">Behavioral Patterns</h3>
+              <div className="border border-white/8 rounded-2xl p-5">
+                <p className="text-white/25 text-xs uppercase tracking-widest mb-4">Behavioral Patterns</p>
                 <div className="space-y-3">
                   {profile.insights.slice(0, 4).map((insight, i) => (
                     <div
                       key={i}
                       className={`rounded-xl p-4 border ${
                         insight.type === 'synergy'
-                          ? 'bg-white/5 border-white/15'
-                          : 'bg-white/[0.03] border-white/10'
+                          ? 'bg-white/[0.03] border-white/10'
+                          : 'bg-white/[0.02] border-white/[0.06]'
                       }`}
                     >
-                      <div className="text-xs text-white/40 mb-1">
-                        {insight.type === 'synergy' ? '↑ Synergy' : '⟷ Tension'} ·{' '}
-                        {insight.attributes.map(formatKey).join(' + ')}
+                      <div className="text-white/30 text-xs mb-1.5">
+                        {insight.type === 'synergy' ? '↑ Synergy' : '⟷ Tension'} · {insight.attributes.map(formatKey).join(' + ')}
                       </div>
-                      <p className="text-sm text-white/80 leading-relaxed">{insight.insight}</p>
+                      <p className="text-white/70 text-sm leading-relaxed">{insight.insight}</p>
                     </div>
                   ))}
                 </div>
               </div>
             )}
+
+            {/* Empty state */}
+            {!dataLoading && !hasProfile && (
+              <div className="border border-white/8 rounded-2xl p-10 text-center">
+                <p className="text-white/30 text-sm mb-6">No behavioral data yet. Complete the interview and cognitive games to build your profile.</p>
+                <div className="flex gap-3 justify-center">
+                  <Link href="/onboarding/interview">
+                    <span className="text-sm border border-white/20 px-5 py-2.5 rounded-full hover:border-white/50 transition-colors text-white/60 hover:text-white cursor-pointer">
+                      Start Interview →
+                    </span>
+                  </Link>
+                  <Link href="/onboarding/cognitive">
+                    <span className="text-sm border border-white/20 px-5 py-2.5 rounded-full hover:border-white/50 transition-colors text-white/60 hover:text-white cursor-pointer">
+                      Start Games →
+                    </span>
+                  </Link>
+                </div>
+              </div>
+            )}
+
+            {/* Timeline */}
+            <PatternTimeline onAskNova={handleAskNova} />
           </div>
 
-          {/* Right column: goals + tools + actions */}
-          <div className="col-span-12 lg:col-span-4 space-y-6">
+          {/* Right: goals + actions + stack */}
+          <div className="col-span-12 lg:col-span-4 space-y-5">
+
+            {/* Confidence bar */}
+            {!dataLoading && (
+              <div className="border border-white/8 rounded-2xl p-5">
+                <div className="flex justify-between items-center mb-3">
+                  <p className="text-white/25 text-xs uppercase tracking-widest">Signal</p>
+                  <span className="text-white/50 text-xs">{confidence}%</span>
+                </div>
+                <div className="bg-white/8 h-px rounded-full mb-4">
+                  <div className="h-px rounded-full transition-all" style={{ width: `${confidence}%`, backgroundColor: '#c0c0c0' }} />
+                </div>
+                <p className="text-white/25 text-xs leading-relaxed">
+                  {confidence < 30
+                    ? 'Early signal. More interviews and game sessions will sharpen accuracy.'
+                    : confidence < 60
+                    ? 'Building signal. Nova is learning your patterns.'
+                    : 'Strong signal. Nova has reliable context on how you operate.'}
+                </p>
+                <Link href="/dashboard/profile">
+                  <button className="mt-4 w-full text-xs border border-white/12 text-white/40 py-2.5 rounded-lg hover:border-[#c0c0c0] hover:bg-[#c0c0c0] hover:text-black transition-all">
+                    View full profile
+                  </button>
+                </Link>
+              </div>
+            )}
 
             {/* Goal progress */}
-            <div className="border border-white/10 rounded-2xl p-6 bg-white/3">
-              <h3 className="text-xs uppercase tracking-widest text-white/40 mb-4">Goal Progress</h3>
+            <div className="border border-white/8 rounded-2xl p-5">
+              <p className="text-white/25 text-xs uppercase tracking-widest mb-4">Goal Progress</p>
               {goalProgress.length > 0 ? (
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {goalProgress.map((g) => (
                     <div key={g.goal}>
-                      <div className="flex justify-between text-xs mb-1">
-                        <span className="text-white/70 capitalize">{g.goal.replace(/_/g, ' ')}</span>
-                        <span className="text-white/40">{g.interactions}x</span>
+                      <div className="flex justify-between text-xs mb-1.5">
+                        <span className="text-white/60 capitalize">{g.goal.replace(/_/g, ' ')}</span>
+                        <span className="text-white/30">{g.interactions}x</span>
                       </div>
-                      <div className="w-full bg-white/10 rounded-full h-1.5">
-                        <div
-                          className="bg-white/50 h-1.5 rounded-full transition-all"
-                          style={{ width: `${g.pct}%` }}
-                        />
+                      <div className="w-full bg-white/8 rounded-full h-px">
+                        <div className="h-px rounded-full transition-all" style={{ width: `${g.pct}%`, backgroundColor: '#c0c0c0' }} />
                       </div>
                     </div>
                   ))}
                 </div>
-              ) : (
+              ) : preferences?.goals ? (
                 <div>
-                  {preferences?.goals ? (
-                    <div>
-                      <p className="text-white/50 text-xs mb-3">Your goals:</p>
-                      <p className="text-white/70 text-sm leading-relaxed">{preferences.goals}</p>
-                      <p className="text-white/30 text-xs mt-3">Chat with Nova to start tracking progress.</p>
-                    </div>
-                  ) : (
-                    <p className="text-white/30 text-sm">No goals set yet.</p>
-                  )}
+                  <p className="text-white/50 text-xs mb-2">Current goals:</p>
+                  <p className="text-white/60 text-sm leading-relaxed">{preferences.goals}</p>
+                  <p className="text-white/20 text-xs mt-3">Chat with Nova to track progress.</p>
                 </div>
+              ) : (
+                <p className="text-white/25 text-sm">No goals set yet.</p>
               )}
             </div>
 
-            {/* Tools */}
+            {/* Stack */}
             {preferences?.tools && preferences.tools.length > 0 && (
-              <div className="border border-white/10 rounded-2xl p-6 bg-white/3">
-                <h3 className="text-xs uppercase tracking-widest text-white/40 mb-4">Your Stack</h3>
+              <div className="border border-white/8 rounded-2xl p-5">
+                <p className="text-white/25 text-xs uppercase tracking-widest mb-4">Your Stack</p>
                 <div className="flex flex-wrap gap-2">
                   {preferences.tools.map((t) => (
-                    <span key={t} className="text-xs border border-white/20 text-white/60 px-3 py-1 rounded-full">
+                    <span key={t} className="text-xs border border-white/15 text-white/50 px-3 py-1 rounded-full">
                       {TOOL_LABELS[t] || t}
                     </span>
                   ))}
@@ -304,65 +290,47 @@ export default function Dashboard() {
             )}
 
             {/* Quick actions */}
-            <div className="border border-white/10 rounded-2xl p-6 bg-white/3">
-              <h3 className="text-xs uppercase tracking-widest text-white/40 mb-4">Quick Actions</h3>
-              <div className="space-y-2">
+            <div className="border border-white/8 rounded-2xl p-5">
+              <p className="text-white/25 text-xs uppercase tracking-widest mb-3">Actions</p>
+              <div className="space-y-px">
                 <Link href="/onboarding/cognitive">
-                  <div className="flex items-center justify-between p-3 rounded-xl hover:bg-white/5 transition-colors cursor-pointer">
-                    <span className="text-sm text-white/70">Run assessment again</span>
-                    <span className="text-white/30">→</span>
+                  <div className="flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-white/5 transition-colors cursor-pointer">
+                    <span className="text-sm text-white/55">Run assessment</span>
+                    <span className="text-white/25 text-xs">→</span>
                   </div>
                 </Link>
                 <Link href="/onboarding/interview">
-                  <div className="flex items-center justify-between p-3 rounded-xl hover:bg-white/5 transition-colors cursor-pointer">
-                    <span className="text-sm text-white/70">New interview session</span>
-                    <span className="text-white/30">→</span>
+                  <div className="flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-white/5 transition-colors cursor-pointer">
+                    <span className="text-sm text-white/55">New interview</span>
+                    <span className="text-white/25 text-xs">→</span>
                   </div>
                 </Link>
-                <div
-                  className="flex items-center justify-between p-3 rounded-xl hover:bg-white/5 transition-colors cursor-pointer"
-                  onClick={() => setNovaOpen(true)}
-                >
-                  <span className="text-sm text-white/70">Chat with Nova</span>
-                  <span className="text-white/30">→</span>
-                </div>
+                <Link href="/dashboard/profile">
+                  <div className="flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-white/5 transition-colors cursor-pointer">
+                    <span className="text-sm text-white/55">Refine profile</span>
+                    <span className="text-white/25 text-xs">→</span>
+                  </div>
+                </Link>
               </div>
             </div>
-
-            {/* Pattern Timeline */}
-            <PatternTimeline onAskNova={handleAskNova} />
           </div>
         </div>
 
-        {/* Nova Observations — full width below the grid */}
-        <div className="mt-6">
+        {/* Nova Observations */}
+        <div className="mt-5">
           <NovaObservations onAskNova={handleAskNova} />
         </div>
 
-        {/* Threshold Alerts — full width */}
-        <div className="mt-6">
+        {/* Threshold Alerts */}
+        <div className="mt-5">
           <ThresholdAlerts onAskNova={handleAskNova} />
         </div>
 
         <div className="border-t border-white/5 mt-12 pt-6 text-center">
-          <p className="text-white/20 text-xs tracking-widest">PATTERNALIGNED © 2025</p>
+          <p className="text-white/15 text-xs tracking-widest">PATTERNALIGNED © 2025</p>
         </div>
       </div>
-    </div>
-  );
-}
-
-function ConfidenceBar({ label, pct, color }: { label: string; pct: number; color: string }) {
-  return (
-    <div>
-      <div className="flex justify-between text-xs mb-1.5">
-        <span className="text-white/50">{label}</span>
-        <span className="text-white/70 font-medium">{pct}%</span>
-      </div>
-      <div className="w-full bg-white/10 rounded-full h-2">
-        <div className={`${color} h-2 rounded-full transition-all`} style={{ width: `${pct}%` }} />
-      </div>
-    </div>
+    </WorkspaceLayout>
   );
 }
 
