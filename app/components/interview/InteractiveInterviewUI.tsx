@@ -187,7 +187,7 @@ export default function InteractiveInterviewUI() {
               {turn.answer && (
                 <div className="ml-8">
                   <div className="text-silver text-xs mb-2 font-light">You</div>
-                  <div className="bg-white/5 border border-white/10 rounded p-4 text-sm sm:text-base leading-relaxed">
+                  <div className="rounded p-4 text-sm sm:text-base leading-relaxed" style={{ backgroundColor: '#1a1a1a', border: '1px solid #c0c0c0', color: '#e0e0e0' }}>
                     {turn.answer}
                   </div>
                 </div>
@@ -231,7 +231,8 @@ export default function InteractiveInterviewUI() {
                 value={userAnswer}
                 onChange={(e) => setUserAnswer(e.target.value)}
                 placeholder="Type your answer here... Be natural and honest."
-                className="w-full p-4 bg-gray-900 border border-silver/20 rounded text-white placeholder-silver/40 resize-none focus:outline-none focus:border-silver/60 transition text-sm sm:text-base"
+                style={{ backgroundColor: '#1a1a1a', borderColor: '#c0c0c0', color: '#e0e0e0' }}
+                className="w-full p-4 border rounded resize-none focus:outline-none transition text-sm sm:text-base placeholder-white/30"
                 rows={4}
                 disabled={loading}
               />
