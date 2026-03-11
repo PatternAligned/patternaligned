@@ -16,24 +16,45 @@ export default function ProfileValidationPage() {
   }, [status, router]);
 
   if (status === 'loading') {
-    return <div className="min-h-screen bg-black flex items-center justify-center"><div className="w-6 h-6 border border-white/30 border-t-white rounded-full animate-spin" /></div>;
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="w-6 h-6 border border-white/30 border-t-white rounded-full animate-spin" />
+      </div>
+    );
   }
+
   if (!session) return null;
 
   if (showCalibration) {
     return (
       <NovaCalibration
-        onComplete={() => {
-          setShowCalibration(false);
+        onComplete={(selfRating?: number) => {
+          fetch('/api/profile/validate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ validated: true, userSelfRating: selfRating }),
+          }).catch(() => {
+            // non-fatal
+          });
           router.push('/dashboard');
         }}
+        onBack={() => setShowCalibration(false)}
       />
     );
   }
 
   return (
     <ProfileSummary
-      onAccurate={() => router.push('/dashboard')}
+      onAccurate={() => {
+        fetch('/api/profile/validate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ validated: true }),
+        }).catch(() => {
+          // non-fatal
+        });
+        router.push('/dashboard');
+      }}
       onRefine={() => setShowCalibration(true)}
     />
   );
