@@ -69,7 +69,7 @@ export default function PatternTimeline({ onAskNova }: { onAskNova?: (prompt: st
     );
   }
 
-  if (!data || data.days.every((d) => d.activity === 0 && d.goals === 0 && d.confidence === null)) {
+  if (!data || !data.days || data.days.every((d) => d.activity === 0 && d.goals === 0 && d.confidence === null)) {
     return (
       <div className="border border-white/10 rounded-2xl p-6 bg-white/3">
         <div className="text-xs uppercase tracking-widest text-white/40 mb-4">Pattern Timeline</div>
