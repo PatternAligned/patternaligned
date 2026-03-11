@@ -506,12 +506,12 @@ Answers:
 
 Return a JSON object with this exact structure (no markdown, raw JSON only):
 {
-  "overall_summary": "2-3 sentence description of this person's cognitive style",
+  "overall_summary": "2-3 sentence description written directly to the user in second person (use 'you' and 'your', never 'this person' or 'they'). Example: 'You are a truth-seeking, collaborative leader who...'",
   "confidence_score": 0.85,
-  "compression_profile": { "preference": "dense|sparse", "description": "one sentence" },
-  "friction_profile": { "preference": "push|navigate", "description": "one sentence" },
-  "execution_profile": { "preference": "rapid|deliberate", "description": "one sentence" },
-  "contradiction_profile": { "preference": "resolve|hold", "description": "one sentence" }
+  "compression_profile": { "preference": "dense|sparse", "description": "one sentence written in second person using 'you'" },
+  "friction_profile": { "preference": "push|navigate", "description": "one sentence written in second person using 'you'" },
+  "execution_profile": { "preference": "rapid|deliberate", "description": "one sentence written in second person using 'you'" },
+  "contradiction_profile": { "preference": "resolve|hold", "description": "one sentence written in second person using 'you'" }
 }`;
 
     const response = await client.messages.create({
