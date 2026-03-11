@@ -126,6 +126,11 @@ export default function Dashboard() {
             >
               {novaOpen ? 'Close Nova' : 'Open Nova'}
             </button>
+            <Link href="/dashboard/profile">
+              <button className="px-5 py-2 text-sm border border-white/20 hover:border-white/50 rounded-full transition-colors text-white/70 hover:text-white">
+                Profile
+              </button>
+            </Link>
             <button
               onClick={() => signOut({ redirect: true, callbackUrl: '/auth/signin' })}
               className="px-5 py-2 text-sm border border-white/20 hover:border-white/50 rounded-full transition-colors text-white/70 hover:text-white"
@@ -139,11 +144,11 @@ export default function Dashboard() {
         {novaOpen && (
           <div className="mb-10 border border-white/10 rounded-2xl bg-white/5 backdrop-blur-xl overflow-hidden" style={{ height: '480px' }}>
             <div className="border-b border-white/10 px-5 py-3 flex items-center gap-2">
-              <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" />
+              <div className="w-2 h-2 bg-white/60 rounded-full animate-pulse" />
               <span className="text-sm text-white/70 font-medium">Nova</span>
               <span className="text-xs text-white/30 ml-2">tuned to your profile</span>
             </div>
-            <div className="h-[calc(100%-48px)] bg-white">
+            <div className="h-[calc(100%-48px)] bg-black">
               <Nova initialMessage={novaPreFill} />
             </div>
           </div>
@@ -179,8 +184,8 @@ export default function Dashboard() {
               <div className="border border-white/10 rounded-2xl p-6 bg-white/3">
                 <h3 className="text-xs uppercase tracking-widest text-white/40 mb-5">Profile Coverage</h3>
                 <div className="grid grid-cols-2 gap-4 mb-5">
-                  <ConfidenceBar label="Overall Confidence" pct={confidence} color="bg-blue-400" />
-                  <ConfidenceBar label="Activation Alignment" pct={activation} color="bg-green-400" />
+                  <ConfidenceBar label="Overall Confidence" pct={confidence} color="bg-white/60" />
+                  <ConfidenceBar label="Activation Alignment" pct={activation} color="bg-white/40" />
                 </div>
 
                 {/* Per-probe from interview */}
@@ -230,8 +235,8 @@ export default function Dashboard() {
                       key={i}
                       className={`rounded-xl p-4 border ${
                         insight.type === 'synergy'
-                          ? 'bg-green-500/10 border-green-500/20'
-                          : 'bg-amber-500/10 border-amber-500/20'
+                          ? 'bg-white/5 border-white/15'
+                          : 'bg-white/[0.03] border-white/10'
                       }`}
                     >
                       <div className="text-xs text-white/40 mb-1">
@@ -262,7 +267,7 @@ export default function Dashboard() {
                       </div>
                       <div className="w-full bg-white/10 rounded-full h-1.5">
                         <div
-                          className="bg-blue-400 h-1.5 rounded-full transition-all"
+                          className="bg-white/50 h-1.5 rounded-full transition-all"
                           style={{ width: `${g.pct}%` }}
                         />
                       </div>
