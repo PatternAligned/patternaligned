@@ -1,5 +1,7 @@
 // Nova System Prompt Builder
-// Reads user_preferences + behavioral profile → injects into every Nova response
+// Reads user_preferences + behavioral profile + real-time vibe → injects into every Nova response
+
+import { VibeSignals, VibeAdaptations, deriveAdaptations } from './vibeDetection';
 
 interface UserPrefs {
   use_cases?: string[];
@@ -10,6 +12,7 @@ interface UserPrefs {
 
 const TONE_INSTRUCTIONS: Record<string, string> = {
   direct: 'Be direct. Lead with the answer. Cut preamble.',
+  blunt: 'Be blunt. Say the uncomfortable thing if it\'s true. Don\'t soften.',
   sarcastic: 'Use dry wit and light sarcasm when it fits.',
   analytical: 'Break things down systematically. Show reasoning.',
   warm: 'Be warm and supportive in tone.',
@@ -17,6 +20,9 @@ const TONE_INSTRUCTIONS: Record<string, string> = {
   concise: 'Be ruthlessly concise. One sentence beats three.',
   collaborative: 'Think alongside them, not at them.',
   challenging: 'Push back constructively. Challenge weak assumptions.',
+  no_fluff: 'Zero corporate speak. No buzzwords, no jargon, no vague platitudes. Plain language only.',
+  peer: 'Treat them as a peer, not a user. You\'re at the same level. Skip the assistant persona entirely.',
+  hype: 'Match their energy. Believe in what they\'re building. Be the voice that pushes them forward.',
 };
 
 const TOOL_NAMES: Record<string, string> = {
@@ -30,12 +36,23 @@ const TOOL_NAMES: Record<string, string> = {
   notion: 'Notion',
   figma: 'Figma',
   vercel: 'Vercel',
+  render: 'Render',
+  supabase: 'Supabase',
+  postgres: 'PostgreSQL',
+  docker: 'Docker',
+  aws: 'AWS',
+  gcp: 'GCP',
+  jira: 'Jira',
+  airtable: 'Airtable',
+  retool: 'Retool',
+  postman: 'Postman',
 };
 
 export function buildNovaSystemPrompt(
   prefs: UserPrefs | null,
   profile: Record<string, string> | null,
-  userGoals?: string | null
+  userGoals?: string | null,
+  vibe?: VibeSignals | null
 ): string {
   const sections: string[] = [];
 
@@ -116,6 +133,47 @@ export function buildNovaSystemPrompt(
 
     if (profileLines.length) {
       sections.push(`COGNITIVE PROFILE:\n${profileLines.map((l) => `- ${l}`).join('\n')}`);
+    }
+  }
+
+  // Real-time vibe adaptations (derived from how they're messaging right now)
+  if (vibe) {
+    const a: VibeAdaptations = deriveAdaptations(vibe);
+    const vibeRules: string[] = [];
+
+    if (a.dropFormalities) {
+      vibeRules.push('Never open with "Certainly!", "Of course!", "Great question!", or any affirmation filler. Just answer.');
+    }
+    if (a.dropHedging) {
+      vibeRules.push('No hedging. Drop "I think", "perhaps", "might be worth considering." State things directly.');
+    }
+    if (a.matchTerseness) {
+      vibeRules.push('They are writing short. Match their brevity. No long preambles. Lead with the answer.');
+    }
+    if (a.useCasualLanguage) {
+      vibeRules.push('Casual register. Use contractions. Talk like a smart colleague, not a corporate tool.');
+    }
+    if (a.biasToAction) {
+      vibeRules.push('Bias to action. Default to "do X" over "you might want to consider doing X."');
+    }
+    if (a.showWorkingOut) {
+      vibeRules.push('Walk through your reasoning. They want to see the logic, not just the answer.');
+    }
+    if (a.acknowledgeTeam) {
+      vibeRules.push('Frame advice in terms of their team context where relevant. They\'re not working alone.');
+    }
+    if (a.beDirectAboutDisagreement) {
+      vibeRules.push('When you disagree, say so directly. Don\'t soften it — they can handle it and prefer the honesty.');
+    }
+
+    if (vibe.energyLevel === 'high') {
+      vibeRules.push('Match their energy. Keep pace with them.');
+    } else if (vibe.energyLevel === 'low') {
+      vibeRules.push('They may be tired or stuck. Keep responses grounded and practical, not overwhelming.');
+    }
+
+    if (vibeRules.length) {
+      sections.push(`REAL-TIME STYLE CALIBRATION (from how they're talking right now):\n${vibeRules.map((r) => `- ${r}`).join('\n')}`);
     }
   }
 

@@ -6,6 +6,7 @@ import { Pool } from 'pg';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { buildNovaSystemPrompt } from '@/lib/novaSystemPrompt';
+import { detectVibe } from '@/lib/vibeDetection';
 import Anthropic from '@anthropic-ai/sdk';
 
 const pool = new Pool({
@@ -111,7 +112,18 @@ export async function POST(request: NextRequest) {
     if (!message) return NextResponse.json({ error: 'message required' }, { status: 400 });
 
     const { prefs, profile } = await getUserContext(userId);
-    const systemPrompt = buildNovaSystemPrompt(prefs, profile);
+
+    // Detect real-time vibe from recent user messages (current + last 5 from history)
+    const recentUserMessages = [
+      ...history
+        .filter((h: { role: string; content: string }) => h.role === 'user')
+        .slice(-5)
+        .map((h: { role: string; content: string }) => h.content),
+      message,
+    ];
+    const vibe = detectVibe(recentUserMessages);
+
+    const systemPrompt = buildNovaSystemPrompt(prefs, profile, undefined, vibe);
 
     const messages: Anthropic.MessageParam[] = [
       ...history.map((h: { role: string; content: string }) => ({
@@ -133,14 +145,31 @@ export async function POST(request: NextRequest) {
     const cleanText = stripGoalTags(rawText);
 
     const chatSessionId = session_id || `nova-${userId}-${Date.now()}`;
+    const logPromises: Promise<any>[] = [];
+
     if (goalTags.length) {
-      await logGoals(userId, goalTags, chatSessionId);
+      logPromises.push(logGoals(userId, goalTags, chatSessionId));
     }
+
+    // Log vibe as behavioral event when signals are non-null (not every message — only when detected)
+    const hasVibeSignal = vibe.directness !== null || vibe.formality !== null || vibe.problemApproach !== null;
+    if (hasVibeSignal) {
+      logPromises.push(
+        pool.query(
+          `INSERT INTO behavioral_events (user_id, event_type, metadata, created_at)
+           VALUES ($1, 'vibe_signal', $2, NOW())`,
+          [userId, JSON.stringify({ session_id: chatSessionId, ...vibe })]
+        ).catch(() => {}) // non-blocking, best-effort
+      );
+    }
+
+    if (logPromises.length) await Promise.all(logPromises);
 
     return NextResponse.json({
       message: cleanText,
       goal_tags: goalTags,
       session_id: chatSessionId,
+      vibe,
     });
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
