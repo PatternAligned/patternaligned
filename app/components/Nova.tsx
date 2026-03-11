@@ -93,34 +93,23 @@ export default function Nova({ sessionId, initialMessage }: NovaProps) {
             <div
               className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap ${
                 msg.role === 'user'
-                  ? 'bg-blue-600 text-white rounded-br-sm'
-                  : 'bg-gray-100 text-gray-900 rounded-bl-sm'
+                  ? 'bg-white text-black rounded-br-sm'
+                  : 'text-white/80 rounded-bl-sm'
               }`}
+              style={msg.role === 'assistant' ? { backgroundColor: '#1a1a1a' } : undefined}
             >
               {msg.content}
-              {msg.goal_tags && msg.goal_tags.length > 0 && (
-                <div className="mt-2 flex flex-wrap gap-1">
-                  {msg.goal_tags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full"
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              )}
             </div>
           </div>
         ))}
 
         {loading && (
           <div className="flex justify-start">
-            <div className="bg-gray-100 rounded-2xl rounded-bl-sm px-4 py-3">
+            <div className="rounded-2xl rounded-bl-sm px-4 py-3" style={{ backgroundColor: '#1a1a1a' }}>
               <div className="flex gap-1">
-                <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                <span className="w-2 h-2 bg-white/40 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                <span className="w-2 h-2 bg-white/40 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                <span className="w-2 h-2 bg-white/40 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
               </div>
             </div>
           </div>
@@ -130,7 +119,7 @@ export default function Nova({ sessionId, initialMessage }: NovaProps) {
       </div>
 
       {/* Input */}
-      <div className="border-t border-gray-200 px-4 py-3">
+      <div className="border-t border-[#333] px-4 py-3">
         <div className="flex gap-2 items-end">
           <textarea
             value={input}
@@ -138,7 +127,7 @@ export default function Nova({ sessionId, initialMessage }: NovaProps) {
             onKeyDown={handleKey}
             placeholder="Message Nova..."
             rows={1}
-            className="flex-1 border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none max-h-32"
+            className="flex-1 bg-black border border-[#c0c0c0]/30 text-white placeholder-white/30 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#c0c0c0]/60 resize-none max-h-32"
             style={{ height: 'auto' }}
             onInput={(e) => {
               const t = e.target as HTMLTextAreaElement;
@@ -149,12 +138,12 @@ export default function Nova({ sessionId, initialMessage }: NovaProps) {
           <button
             onClick={send}
             disabled={loading || !input.trim()}
-            className="bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white rounded-xl px-4 py-2.5 text-sm font-medium transition-colors"
+            className="bg-white text-black hover:bg-white/90 disabled:opacity-40 rounded-xl px-4 py-2.5 text-sm font-medium transition-colors"
           >
             Send
           </button>
         </div>
-        <p className="text-xs text-gray-400 mt-1.5 text-center">Enter to send · Shift+Enter for new line</p>
+        <p className="text-xs text-white/20 mt-1.5 text-center">Enter to send · Shift+Enter for new line</p>
       </div>
     </div>
   );

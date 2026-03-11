@@ -14,7 +14,7 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false },
 });
 
-const anthropic = new Anthropic({ apiKey: process.env.CLAUDE_API_KEY });
+const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 async function getUserContext(userId: string) {
   const [prefsResult, eventsResult, interviewResult] = await Promise.all([
@@ -144,8 +144,34 @@ export async function POST(request: NextRequest) {
     const goalTags = extractGoalTags(rawText);
     const cleanText = stripGoalTags(rawText);
 
+    const isNewSession = !session_id;
     const chatSessionId = session_id || `nova-${userId}-${Date.now()}`;
     const logPromises: Promise<any>[] = [];
+
+    // Persist session to nova_sessions
+    if (isNewSession) {
+      const title = message.slice(0, 50);
+      logPromises.push(
+        pool.query(
+          `CREATE TABLE IF NOT EXISTS nova_sessions (
+             id TEXT PRIMARY KEY, user_id TEXT NOT NULL, title TEXT,
+             created_at TIMESTAMPTZ DEFAULT NOW(), updated_at TIMESTAMPTZ DEFAULT NOW()
+           )`
+        ).then(() =>
+          pool.query(
+            `INSERT INTO nova_sessions (id, user_id, title) VALUES ($1, $2, $3) ON CONFLICT (id) DO NOTHING`,
+            [chatSessionId, userId, title]
+          )
+        ).catch(() => {})
+      );
+    } else {
+      logPromises.push(
+        pool.query(
+          `UPDATE nova_sessions SET updated_at = NOW() WHERE id = $1`,
+          [chatSessionId]
+        ).catch(() => {})
+      );
+    }
 
     if (goalTags.length) {
       logPromises.push(logGoals(userId, goalTags, chatSessionId));
