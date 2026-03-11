@@ -520,7 +520,7 @@ Return a JSON object with this exact structure (no markdown, raw JSON only):
       messages: [{ role: 'user', content: prompt }],
     });
 
-    const raw = response.content[0].text.replace(/^```(?:json)?\n?|```$/g, '').trim();
+    const raw = response.content[0].text.replace(/^```(?:json)?\n?|\n?```\s*$/g, '').trim();
     const claudeInsights = JSON.parse(raw);
 
     await pool.query(

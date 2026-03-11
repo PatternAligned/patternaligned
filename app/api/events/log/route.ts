@@ -35,13 +35,13 @@ export async function POST(request: NextRequest) {
     }
 
     await ensureTable();
-    await pool.query(
+    const result = await pool.query(
       `INSERT INTO behavioral_events (user_id, event_type, metadata, created_at)
-       VALUES ($1, $2, $3, NOW())`,
+       VALUES ($1, $2, $3, NOW()) RETURNING id`,
       [userId, event_type, JSON.stringify(metadata || {})]
     );
 
-    return NextResponse.json({ success: true }, { status: 201 });
+    return NextResponse.json({ success: true, event_id: result.rows[0].id }, { status: 200 });
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
     console.error('Event logging error:', msg);

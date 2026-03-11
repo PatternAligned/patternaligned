@@ -2,6 +2,7 @@
 // Reads behavioral profile → detects contradictions/synergies → generates insights
 
 interface BehavioralProfile {
+  // Game measurements
   relationship_model?: string;
   communication_style?: string;
   pace_preference?: string;
@@ -10,6 +11,11 @@ interface BehavioralProfile {
   topic_preference?: string;
   problem_solving_style?: string;
   activation_pattern?: string;
+  // Interview 4-probe dimensions
+  compression?: string;   // 'dense' | 'sparse'
+  friction?: string;      // 'push' | 'navigate'
+  execution?: string;     // 'rapid' | 'deliberate'
+  contradiction?: string; // 'resolve' | 'hold'
 }
 
 interface PatternInsight {
@@ -156,6 +162,80 @@ const CONTRADICTION_RULES: Array<{
   },
 ];
 
+// CROSS-SOURCE SYNERGY RULES (interview × games)
+const CROSS_SYNERGY_RULES: Array<{
+  attributes: string[];
+  check: (profile: BehavioralProfile) => boolean;
+  insight: string;
+  implication: string;
+}> = [
+  {
+    attributes: ["execution", "pace_preference"],
+    check: (p) => p.execution === "rapid" && p.pace_preference === "Sprint",
+    insight:
+      "Rapid execution (interview) + Sprint pace (game) = double-confirmed execute-first thinker — you bias toward action across every context",
+    implication:
+      "Ship, learn, iterate. Your instinct to move fast is consistent and reliable. Trust it.",
+  },
+  {
+    attributes: ["compression", "communication_style"],
+    check: (p) => p.compression === "dense" && p.communication_style === "Concise",
+    insight:
+      "Dense compression preference (interview) + Concise communication style (game) = signal-density preference at both input and output",
+    implication:
+      "You're efficient in and out. Avoid working with people who need hand-holding — it will frustrate both of you.",
+  },
+  {
+    attributes: ["friction", "problem_solving_style"],
+    check: (p) => p.friction === "navigate" && p.problem_solving_style === "Analytical",
+    insight:
+      "Navigate-around friction style (interview) + Analytical problem-solving (game) = systematic detour-mapper who analyzes the landscape before committing to a path",
+    implication:
+      "You find elegant solutions others miss. You rarely brute-force — you find the smarter route.",
+  },
+  {
+    attributes: ["contradiction", "risk_tolerance"],
+    check: (p) => p.contradiction === "hold" && p.risk_tolerance === "Adaptive",
+    insight:
+      "Hold-both contradiction preference (interview) + Adaptive risk tolerance (game) = ambiguity-tolerant at every level — cognitive and behavioral",
+    implication:
+      "Uncertainty doesn't freeze you. This is rare and valuable in fast-moving environments.",
+  },
+];
+
+// CROSS-SOURCE CONTRADICTION RULES (interview × games)
+const CROSS_CONTRADICTION_RULES: Array<{
+  attributes: string[];
+  check: (profile: BehavioralProfile) => boolean;
+  insight: string;
+  implication: string;
+}> = [
+  {
+    attributes: ["execution", "problem_solving_style"],
+    check: (p) => p.execution === "rapid" && p.problem_solving_style === "Analytical",
+    insight:
+      "Rapid execution instinct (interview) vs. Analytical problem-solving style (game) — you want to move fast but your process needs data first",
+    implication:
+      "Set a minimum-viable analysis threshold before acting. Otherwise you'll stall in research loops or regret under-analyzed decisions.",
+  },
+  {
+    attributes: ["compression", "communication_style"],
+    check: (p) => p.compression === "sparse" && p.communication_style === "Narrative",
+    insight:
+      "Sparse input preference (interview) vs. Narrative communication style (game) — you want stripped-down information but give others full context",
+    implication:
+      "You may be more generous with explanation than you need from others. Expect asymmetry in how you communicate vs. how you want to receive.",
+  },
+  {
+    attributes: ["friction", "risk_tolerance"],
+    check: (p) => p.friction === "push" && p.risk_tolerance === "Conservative",
+    insight:
+      "Push-through friction style (interview) vs. Conservative risk tolerance (game) — you confront obstacles head-on but avoid uncertain bets",
+    implication:
+      "You apply force to known problems but retreat from ambiguous ones. Identify which obstacles are actually high-risk vs. just uncomfortable.",
+  },
+];
+
 // ACTIVATION ALIGNMENT
 const ACTIVATION_ALIGNMENT: Array<{
   activation: string;
@@ -260,7 +340,31 @@ export function correlatePatterns(
     }
   });
 
+  CROSS_SYNERGY_RULES.forEach((rule) => {
+    if (rule.check(profile)) {
+      insights.push({
+        type: "synergy",
+        attributes: rule.attributes,
+        insight: rule.insight,
+        strength: "strong",
+        implication: rule.implication,
+      });
+    }
+  });
+
   CONTRADICTION_RULES.forEach((rule) => {
+    if (rule.check(profile)) {
+      insights.push({
+        type: "contradiction",
+        attributes: rule.attributes,
+        insight: rule.insight,
+        strength: "moderate",
+        implication: rule.implication,
+      });
+    }
+  });
+
+  CROSS_CONTRADICTION_RULES.forEach((rule) => {
     if (rule.check(profile)) {
       insights.push({
         type: "contradiction",
