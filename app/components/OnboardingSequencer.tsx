@@ -1,5 +1,7 @@
 'use client';
 
+// PatternAligned branding: ONLY P & A capitalized, never full caps — remove uppercase class
+
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import GameSequencer from './CognitiveTests/GameSequencer';
@@ -8,22 +10,29 @@ import SetupIntake from './SetupIntake';
 import RelationshipModelSelector from './RelationshipModelSelector';
 import CognitiveProfile from './CognitiveProfile';
 import ConfidenceBreakdown from './ConfidenceBreakdown';
+import InterviewChat from './InterviewChat';
 
-type Phase = 'cognitive_profile' | 'confidence_breakdown' | 'games' | 'context' | 'setup' | 'relationship';
+// Flow: context → setup → relationship → interview_chat → cognitive_profile → confidence_breakdown → games → done
+type Phase =
+  | 'context'
+  | 'setup'
+  | 'relationship'
+  | 'interview_chat'
+  | 'cognitive_profile'
+  | 'confidence_breakdown'
+  | 'games';
 
 const HISTORY_KEY = 'onboarding_phase_history';
-// Form data keys to clear when starting fresh
 const FORM_KEYS = ['onboarding_context', 'onboarding_setup', 'onboarding_game_index'];
 
 function loadHistory(): Phase[] {
-  if (typeof window === 'undefined') return ['cognitive_profile'];
+  if (typeof window === 'undefined') return ['context'];
   try {
     const saved = sessionStorage.getItem(HISTORY_KEY);
     if (saved) return JSON.parse(saved);
-    // No saved history = fresh start: clear form data from any previous session
     FORM_KEYS.forEach((k) => { try { sessionStorage.removeItem(k); } catch {} });
-    return ['cognitive_profile'];
-  } catch { return ['cognitive_profile']; }
+    return ['context'];
+  } catch { return ['context']; }
 }
 
 function saveHistory(h: Phase[]) {
@@ -64,24 +73,6 @@ export default function OnboardingSequencer() {
 
   return (
     <div className="min-h-screen bg-black">
-      {currentPhase === 'cognitive_profile' && (
-        <CognitiveProfile
-          onComplete={() => goTo('confidence_breakdown')}
-          onBack={goBack}
-        />
-      )}
-      {currentPhase === 'confidence_breakdown' && (
-        <ConfidenceBreakdown
-          onComplete={() => goTo('games')}
-          onBack={goBack}
-        />
-      )}
-      {currentPhase === 'games' && (
-        <GameSequencer
-          onAllGamesComplete={() => goTo('context')}
-          onBack={goBack}
-        />
-      )}
       {currentPhase === 'context' && (
         <ContextIntake
           onComplete={() => goTo('setup')}
@@ -96,7 +87,31 @@ export default function OnboardingSequencer() {
       )}
       {currentPhase === 'relationship' && (
         <RelationshipModelSelector
-          onSelectionComplete={finish}
+          onSelectionComplete={() => goTo('interview_chat')}
+          onBack={goBack}
+        />
+      )}
+      {currentPhase === 'interview_chat' && (
+        <InterviewChat
+          onComplete={() => goTo('cognitive_profile')}
+          onBack={goBack}
+        />
+      )}
+      {currentPhase === 'cognitive_profile' && (
+        <CognitiveProfile
+          onComplete={() => goTo('confidence_breakdown')}
+          onBack={goBack}
+        />
+      )}
+      {currentPhase === 'confidence_breakdown' && (
+        <ConfidenceBreakdown
+          onComplete={() => goTo('games')}
+          onBack={goBack}
+        />
+      )}
+      {currentPhase === 'games' && (
+        <GameSequencer
+          onAllGamesComplete={finish}
           onBack={goBack}
         />
       )}

@@ -128,7 +128,8 @@ export default function InteractiveInterviewUI() {
       <div className="max-w-2xl mx-auto">
 
         <div className="mb-8">
-          <p className="text-white/40 text-xs uppercase tracking-widest mb-3">PatternAligned</p>
+          {/* PatternAligned branding: ONLY P & A capitalized, never full caps — remove uppercase class */}
+          <p className="text-white text-xs tracking-widest mb-3">PatternAligned</p>
           <h1 className="text-3xl font-light mb-2 text-white">Cognitive Fingerprint</h1>
           <p className="text-white text-sm leading-relaxed">
             Answer thoroughly and honestly — the more detail you provide, the better Nova learns your tone, vibe, interaction style, and decision-making pattern.
@@ -136,20 +137,20 @@ export default function InteractiveInterviewUI() {
         </div>
 
         {/* Chat scroll area */}
-        <div className="border border-white/8 rounded-2xl p-5 sm:p-7 mb-6 min-h-[320px] max-h-[520px] overflow-y-auto flex flex-col gap-5" style={{ backgroundColor: '#0a0a0a' }}>
+        <div className="border border-white rounded-2xl p-5 sm:p-7 mb-6 min-h-[320px] max-h-[520px] overflow-y-auto flex flex-col gap-5" style={{ backgroundColor: '#0a0a0a' }}>
           {turns.map((turn, idx) => (
             <div key={idx} className="flex flex-col gap-4">
               {/* Nova question */}
               <div>
-                <div className="text-white/25 text-xs mb-2">Nova</div>
-                <div className="border border-white/8 rounded-xl p-4 text-sm text-white/80 leading-relaxed bg-white/[0.02]">
+                <div className="text-white text-xs mb-2">Nova</div>
+                <div className="border border-white rounded-xl p-4 text-sm text-white leading-relaxed bg-white/[0.02]">
                   {turn.question}
                 </div>
               </div>
               {/* User answer */}
               {turn.answer && (
                 <div className="ml-6 sm:ml-10">
-                  <div className="text-white/25 text-xs mb-2">You</div>
+                  <div className="text-white text-xs mb-2">You</div>
                   <div className="rounded-xl p-4 text-sm leading-relaxed" style={{ backgroundColor: '#1a1a1a', border: '1px solid rgba(192,192,192,0.25)', color: '#e0e0e0' }}>
                     {turn.answer}
                   </div>
@@ -160,11 +161,11 @@ export default function InteractiveInterviewUI() {
 
           {/* Loading indicator */}
           {loading && (
-            <div className="flex items-center gap-3 text-white/30 text-xs py-1">
+            <div className="flex items-center gap-3 text-white text-xs py-1">
               <div className="flex gap-1">
-                <div className="w-1.5 h-1.5 bg-white/30 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                <div className="w-1.5 h-1.5 bg-white/30 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                <div className="w-1.5 h-1.5 bg-white/30 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                <div className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                <div className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                <div className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
               </div>
               <span>Analyzing your response...</span>
             </div>
@@ -173,14 +174,14 @@ export default function InteractiveInterviewUI() {
           {/* Inline completion summary */}
           {isComplete && insights && (
             <div className="mt-2">
-              <div className="text-white/25 text-xs mb-2">Nova</div>
-              <div className="border border-white/10 rounded-xl p-5 bg-white/[0.03]">
-                <p className="text-white/70 text-sm leading-relaxed mb-3">{insights.overall_summary}</p>
-                <div className="flex items-center gap-2 pt-2 border-t border-white/8">
-                  <div className="flex-1 bg-white/8 h-px rounded-full">
+              <div className="text-white text-xs mb-2">Nova</div>
+              <div className="border border-white rounded-xl p-5 bg-white/[0.03]">
+                <p className="text-white text-sm leading-relaxed mb-3">{insights.overall_summary}</p>
+                <div className="flex items-center gap-2 pt-2 border-t border-white/20">
+                  <div className="flex-1 bg-white/20 h-px rounded-full">
                     <div className="h-px rounded-full" style={{ width: `${(insights.confidence_score * 100).toFixed(0)}%`, backgroundColor: '#c0c0c0' }} />
                   </div>
-                  <span className="text-white/25 text-xs tabular-nums shrink-0">{(insights.confidence_score * 100).toFixed(0)}% signal</span>
+                  <span className="text-white text-xs tabular-nums shrink-0">{(insights.confidence_score * 100).toFixed(0)}% signal</span>
                 </div>
               </div>
             </div>
@@ -204,8 +205,8 @@ export default function InteractiveInterviewUI() {
                 value={userAnswer}
                 onChange={(e) => setUserAnswer(e.target.value)}
                 placeholder="Type your answer here. Be natural and honest."
-                style={{ backgroundColor: '#1a1a1a', borderColor: 'rgba(255,255,255,0.4)', color: '#ffffff' }}
-                className="w-full p-4 border rounded-xl resize-none focus:outline-none focus:border-white/50 transition text-sm placeholder-white/20"
+                style={{ backgroundColor: '#1a1a1a', borderColor: '#ffffff', color: '#ffffff' }}
+                className="w-full p-4 border rounded-xl resize-none focus:outline-none focus:border-white transition text-sm placeholder-white/40"
                 rows={4}
                 disabled={loading}
                 onKeyDown={(e) => {
@@ -222,7 +223,7 @@ export default function InteractiveInterviewUI() {
               >
                 {loading ? 'Analyzing...' : 'Continue →'}
               </button>
-              <p className="text-white/20 text-xs text-center">⌘↵ to submit</p>
+              <p className="text-white text-xs text-center">⌘↵ to submit</p>
             </form>
           )
         )}

@@ -163,7 +163,8 @@ export default function SetupIntake({ onComplete, onBack }: SetupIntakeProps) {
     <div className="min-h-screen bg-black px-6 py-12">
       <div className="w-full max-w-lg mx-auto">
         <div className="mb-10">
-          <p className="text-white/40 text-xs uppercase tracking-widest mb-3">PatternAligned</p>
+          {/* PatternAligned branding: ONLY P & A capitalized, never full caps — remove uppercase class */}
+          <p className="text-white text-xs tracking-widest mb-3">PatternAligned</p>
           <h1 className="text-4xl font-light text-white mb-2">How you work</h1>
           <p className="text-white text-sm">Shapes how Nova thinks and talks with you.</p>
         </div>

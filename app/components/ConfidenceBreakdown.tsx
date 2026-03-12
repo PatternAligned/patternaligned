@@ -1,10 +1,23 @@
 'use client';
 
+// PatternAligned branding: ONLY P & A capitalized, never full caps — remove uppercase class
+
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 
+interface ConfidenceScores {
+  directness?: number;
+  execution?: number;
+  friction_tolerance?: number;
+  collaboration?: number;
+  contradiction_acceptance?: number;
+  cognitive_load?: number;
+}
+
 interface ProfileData {
   interview_profiles: {
+    confidence_score?: number;
+    confidence_scores?: ConfidenceScores;
     compression_profile?: { preference: string };
     friction_profile?: { preference: string };
     execution_profile?: { preference: string };
@@ -16,79 +29,20 @@ interface ProfileData {
   };
 }
 
-interface Dimension {
-  label: string;
-  score: number;
-  source: 'game' | 'interview' | 'both' | 'none';
+const DIMENSIONS: { key: keyof ConfidenceScores; label: string }[] = [
+  { key: 'directness', label: 'Directness' },
+  { key: 'execution', label: 'Execution Style' },
+  { key: 'friction_tolerance', label: 'Friction Tolerance' },
+  { key: 'collaboration', label: 'Collaboration Model' },
+  { key: 'contradiction_acceptance', label: 'Contradiction Acceptance' },
+  { key: 'cognitive_load', label: 'Cognitive Load Preference' },
+];
+
+function getSource(score: number): string {
+  if (score >= 75) return 'Strong signal';
+  if (score >= 50) return 'Building';
+  return 'No data yet';
 }
-
-function deriveDimensions(data: ProfileData): Dimension[] {
-  const { interview_profiles: ip, game_measurements: gm } = data;
-
-  const hasGame = (key: string) => !!gm[key];
-  const hasInterview = (key: keyof NonNullable<typeof ip>) =>
-    !!(ip as any)?.[key]?.preference;
-
-  return [
-    {
-      label: 'Directness',
-      score: hasGame('communication_style') && hasInterview('compression_profile') ? 88
-        : hasGame('communication_style') ? 65
-        : hasInterview('compression_profile') ? 52
-        : 12,
-      source: hasGame('communication_style') && hasInterview('compression_profile') ? 'both'
-        : hasGame('communication_style') ? 'game'
-        : hasInterview('compression_profile') ? 'interview'
-        : 'none',
-    },
-    {
-      label: 'Execution Style',
-      score: hasGame('pace_preference') && hasInterview('execution_profile') ? 90
-        : hasGame('pace_preference') ? 62
-        : hasInterview('execution_profile') ? 55
-        : 10,
-      source: hasGame('pace_preference') && hasInterview('execution_profile') ? 'both'
-        : hasGame('pace_preference') ? 'game'
-        : hasInterview('execution_profile') ? 'interview'
-        : 'none',
-    },
-    {
-      label: 'Friction Tolerance',
-      score: hasGame('risk_tolerance') && hasInterview('friction_profile') ? 85
-        : hasGame('risk_tolerance') ? 60
-        : hasInterview('friction_profile') ? 50
-        : 10,
-      source: hasGame('risk_tolerance') && hasInterview('friction_profile') ? 'both'
-        : hasGame('risk_tolerance') ? 'game'
-        : hasInterview('friction_profile') ? 'interview'
-        : 'none',
-    },
-    {
-      label: 'Collaboration Model',
-      score: hasGame('relationship_model') ? 80 : 10,
-      source: hasGame('relationship_model') ? 'game' : 'none',
-    },
-    {
-      label: 'Contradiction Acceptance',
-      score: hasInterview('contradiction_profile') ? 75 : 10,
-      source: hasInterview('contradiction_profile') ? 'interview' : 'none',
-    },
-    {
-      label: 'Cognitive Load Preference',
-      score: hasGame('topic_preference') && hasGame('problem_solving_style') ? 82
-        : hasGame('topic_preference') || hasGame('problem_solving_style') ? 55
-        : 10,
-      source: hasGame('topic_preference') || hasGame('problem_solving_style') ? 'game' : 'none',
-    },
-  ];
-}
-
-const SOURCE_LABELS: Record<string, string> = {
-  both: 'Interview + Games',
-  game: 'Behavioral Games',
-  interview: 'Interview',
-  none: 'No data yet',
-};
 
 export default function ConfidenceBreakdown({
   onComplete,
@@ -116,7 +70,7 @@ export default function ConfidenceBreakdown({
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
           <div className="w-px h-12 bg-white/20 mx-auto mb-6 animate-pulse" />
-          <p className="text-white/40 text-xs uppercase tracking-widest">Calculating confidence</p>
+          <p className="text-white text-xs tracking-widest">Calculating confidence</p>
         </div>
       </div>
     );
@@ -131,7 +85,37 @@ export default function ConfidenceBreakdown({
   }
 
   const overallScore = data.correlationResult?.confidenceScore ?? 0;
-  const dimensions = deriveDimensions(data);
+  const ip = data.interview_profiles;
+
+  // Use real scores from interview session if available, otherwise derive heuristically
+  const rawScores: ConfidenceScores = ip?.confidence_scores || {};
+  const gm = data.game_measurements;
+
+  // Fallback derivation when no interview scores exist
+  const getScore = (key: keyof ConfidenceScores): number => {
+    if (rawScores[key] !== undefined) return rawScores[key] as number;
+    // heuristic fallback from presence of data
+    switch (key) {
+      case 'directness':
+        return (!!ip?.compression_profile && !!gm.communication_style) ? 70
+          : (!!ip?.compression_profile || !!gm.communication_style) ? 45 : 12;
+      case 'execution':
+        return (!!ip?.execution_profile && !!gm.pace_preference) ? 72
+          : (!!ip?.execution_profile || !!gm.pace_preference) ? 45 : 12;
+      case 'friction_tolerance':
+        return (!!ip?.friction_profile && !!gm.risk_tolerance) ? 68
+          : (!!ip?.friction_profile || !!gm.risk_tolerance) ? 43 : 12;
+      case 'collaboration':
+        return !!gm.relationship_model ? 60 : 12;
+      case 'contradiction_acceptance':
+        return !!ip?.contradiction_profile ? 65 : 12;
+      case 'cognitive_load':
+        return (!!gm.topic_preference && !!gm.problem_solving_style) ? 62
+          : (!!gm.topic_preference || !!gm.problem_solving_style) ? 38 : 12;
+      default:
+        return 12;
+    }
+  };
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -139,7 +123,8 @@ export default function ConfidenceBreakdown({
 
         {/* Header */}
         <div className="mb-12">
-          <p className="text-white/40 text-xs uppercase tracking-[0.2em] mb-4">PatternAligned · Signal Confidence</p>
+          {/* PatternAligned branding: ONLY P & A capitalized, never full caps — remove uppercase class */}
+          <p className="text-white text-xs tracking-[0.2em] mb-4">PatternAligned · Signal Confidence</p>
           <h1 className="text-5xl font-light text-white mb-4 leading-tight">
             How well do we know you?
           </h1>
@@ -149,18 +134,18 @@ export default function ConfidenceBreakdown({
         </div>
 
         {/* Overall confidence metric */}
-        <div className="mb-10 border border-white/40 rounded-xl p-6" style={{ backgroundColor: '#0a0a0a' }}>
+        <div className="mb-10 border border-white rounded-xl p-6" style={{ backgroundColor: '#0a0a0a' }}>
           <div className="flex items-baseline justify-between mb-3">
             <p className="text-white text-xs uppercase tracking-widest">Overall Signal Confidence</p>
             <span className="text-4xl font-light" style={{ color: '#c0c0c0' }}>{overallScore}%</span>
           </div>
-          <div className="w-full bg-white/10 rounded-full h-px">
+          <div className="w-full bg-white/20 rounded-full h-px">
             <div
               className="h-px rounded-full transition-all duration-700"
               style={{ width: `${overallScore}%`, backgroundColor: '#c0c0c0' }}
             />
           </div>
-          <p className="text-white/40 text-xs mt-3">
+          <p className="text-white text-xs mt-3">
             {overallScore < 30
               ? 'Early stage — complete the games and interview to build signal.'
               : overallScore < 60
@@ -173,26 +158,29 @@ export default function ConfidenceBreakdown({
         <div className="mb-12">
           <p className="text-white text-xs uppercase tracking-widest mb-4">Confidence by Dimension</p>
           <div className="space-y-5">
-            {dimensions.map(({ label, score, source }) => (
-              <div key={label}>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-white text-xs uppercase tracking-widest">{label}</span>
-                  <div className="flex items-center gap-3">
-                    <span className="text-white/40 text-xs">{SOURCE_LABELS[source]}</span>
-                    <span className="text-white text-sm font-medium w-10 text-right">{score}%</span>
+            {DIMENSIONS.map(({ key, label }) => {
+              const score = getScore(key);
+              return (
+                <div key={key}>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-white text-xs uppercase tracking-widest">{label}</span>
+                    <div className="flex items-center gap-3">
+                      <span className="text-white text-xs">{getSource(score)}</span>
+                      <span className="text-white text-sm font-medium w-10 text-right">{score}%</span>
+                    </div>
+                  </div>
+                  <div className="w-full bg-white/20 rounded-full h-px">
+                    <div
+                      className="h-px rounded-full transition-all duration-700"
+                      style={{
+                        width: `${score}%`,
+                        backgroundColor: score >= 75 ? '#c0c0c0' : score >= 40 ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.25)',
+                      }}
+                    />
                   </div>
                 </div>
-                <div className="w-full bg-white/10 rounded-full h-px">
-                  <div
-                    className="h-px rounded-full transition-all duration-700"
-                    style={{
-                      width: `${score}%`,
-                      backgroundColor: score >= 75 ? '#c0c0c0' : score >= 40 ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.15)',
-                    }}
-                  />
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 

@@ -85,9 +85,10 @@ export default function RelationshipModelSelector({ onSelectionComplete, onBack 
     <div className="min-h-screen bg-black text-white px-6 py-12">
       <div className="max-w-lg mx-auto">
         <div className="mb-10">
-          <p className="text-white/30 text-xs uppercase tracking-widest mb-3">PatternAligned</p>
+          {/* PatternAligned branding: ONLY P & A capitalized, never full caps — remove uppercase class */}
+          <p className="text-white text-xs tracking-widest mb-3">PatternAligned</p>
           <h1 className="text-4xl font-light text-white mb-2">How do you want to work?</h1>
-          <p className="text-white/40 text-sm">Nova adapts to your preferred dynamic.</p>
+          <p className="text-white text-sm">Nova adapts to your preferred dynamic.</p>
         </div>
 
         <div className="space-y-3">
@@ -98,18 +99,18 @@ export default function RelationshipModelSelector({ onSelectionComplete, onBack 
               disabled={isSubmitting}
               className={`w-full border rounded-xl p-5 text-left transition-all ${
                 selectedMode === mode.id
-                  ? 'border-white/40 bg-white/8'
-                  : 'border-white/10 hover:border-white/25 hover:bg-white/5'
+                  ? 'border-white bg-white/10'
+                  : 'border-white hover:bg-white/5'
               } disabled:opacity-50`}
             >
               <div className="flex items-center justify-between mb-1">
                 <h2 className="text-base font-medium text-white">{mode.name}</h2>
                 {selectedMode === mode.id && (
-                  <span className="text-xs text-white/50">selected</span>
+                  <span className="text-xs text-white">selected</span>
                 )}
               </div>
-              <p className="text-white/50 text-sm mb-2">{mode.description}</p>
-              <p className="text-white/25 text-xs">{mode.how_it_works}</p>
+              <p className="text-white text-sm mb-2">{mode.description}</p>
+              <p className="text-white text-xs">{mode.how_it_works}</p>
             </button>
           ))}
         </div>
@@ -132,11 +133,11 @@ export default function RelationshipModelSelector({ onSelectionComplete, onBack 
             <button
               type="button"
               onClick={onBack}
-              className="text-white/30 text-xs hover:text-white/60 transition-colors"
+              className="text-white text-xs hover:text-white/60 transition-colors"
             >
               ← Back
             </button>
-            <p className="text-white/20 text-xs">Step 3 of 4</p>
+            <p className="text-white text-xs">Step 3 of 4</p>
           </div>
         </div>
       </div>

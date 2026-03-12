@@ -97,7 +97,8 @@ export default function CognitiveProfile({
 
         {/* Header */}
         <div className="mb-12">
-          <p className="text-white/40 text-xs uppercase tracking-[0.2em] mb-4">PatternAligned · Cognitive Profile</p>
+          {/* PatternAligned branding: ONLY P & A capitalized, never full caps — remove uppercase class */}
+          <p className="text-white text-xs tracking-[0.2em] mb-4">PatternAligned · Cognitive Profile</p>
           <h1 className="text-5xl font-light text-white mb-4 leading-tight">
             Your cognitive fingerprint.
           </h1>

@@ -61,7 +61,8 @@ export default function ContextIntake({ onComplete, onBack }: ContextIntakeProps
     <div className="min-h-screen bg-black flex items-center justify-center px-6">
       <div className="w-full max-w-lg">
         <div className="mb-10">
-          <p className="text-white/40 text-xs uppercase tracking-widest mb-3">PatternAligned</p>
+          {/* PatternAligned branding: ONLY P & A capitalized, never full caps — remove uppercase class */}
+          <p className="text-white text-xs tracking-widest mb-3">PatternAligned</p>
           <h1 className="text-4xl font-light text-white mb-2">A bit about you</h1>
           <p className="text-white text-sm">Context shapes how the system thinks with you.</p>
         </div>
