@@ -6,24 +6,24 @@ import GameSequencer from './CognitiveTests/GameSequencer';
 import ContextIntake from './ContextIntake';
 import SetupIntake from './SetupIntake';
 import RelationshipModelSelector from './RelationshipModelSelector';
-import FactsSheet from './FactsSheet';
-import NovaDialog from './NovaDialog';
+import CognitiveProfile from './CognitiveProfile';
+import ConfidenceBreakdown from './ConfidenceBreakdown';
 
-type Phase = 'games' | 'context' | 'setup' | 'relationship' | 'facts' | 'nova_dialog';
+type Phase = 'cognitive_profile' | 'confidence_breakdown' | 'games' | 'context' | 'setup' | 'relationship';
 
 const HISTORY_KEY = 'onboarding_phase_history';
 // Form data keys to clear when starting fresh
 const FORM_KEYS = ['onboarding_context', 'onboarding_setup', 'onboarding_game_index'];
 
 function loadHistory(): Phase[] {
-  if (typeof window === 'undefined') return ['games'];
+  if (typeof window === 'undefined') return ['cognitive_profile'];
   try {
     const saved = sessionStorage.getItem(HISTORY_KEY);
     if (saved) return JSON.parse(saved);
     // No saved history = fresh start: clear form data from any previous session
     FORM_KEYS.forEach((k) => { try { sessionStorage.removeItem(k); } catch {} });
-    return ['games'];
-  } catch { return ['games']; }
+    return ['cognitive_profile'];
+  } catch { return ['cognitive_profile']; }
 }
 
 function saveHistory(h: Phase[]) {
@@ -56,8 +56,26 @@ export default function OnboardingSequencer() {
     }
   };
 
+  const finish = () => {
+    sessionStorage.removeItem(HISTORY_KEY);
+    FORM_KEYS.forEach((k) => { try { sessionStorage.removeItem(k); } catch {} });
+    window.location.href = '/dashboard';
+  };
+
   return (
     <div className="min-h-screen bg-black">
+      {currentPhase === 'cognitive_profile' && (
+        <CognitiveProfile
+          onComplete={() => goTo('confidence_breakdown')}
+          onBack={goBack}
+        />
+      )}
+      {currentPhase === 'confidence_breakdown' && (
+        <ConfidenceBreakdown
+          onComplete={() => goTo('games')}
+          onBack={goBack}
+        />
+      )}
       {currentPhase === 'games' && (
         <GameSequencer
           onAllGamesComplete={() => goTo('context')}
@@ -78,23 +96,7 @@ export default function OnboardingSequencer() {
       )}
       {currentPhase === 'relationship' && (
         <RelationshipModelSelector
-          onSelectionComplete={() => goTo('facts')}
-          onBack={goBack}
-        />
-      )}
-      {currentPhase === 'facts' && (
-        <FactsSheet
-          onComplete={() => goTo('nova_dialog')}
-          onBack={goBack}
-        />
-      )}
-      {currentPhase === 'nova_dialog' && (
-        <NovaDialog
-          onComplete={() => {
-            sessionStorage.removeItem(HISTORY_KEY);
-            FORM_KEYS.forEach((k) => { try { sessionStorage.removeItem(k); } catch {} });
-            window.location.href = '/dashboard';
-          }}
+          onSelectionComplete={finish}
           onBack={goBack}
         />
       )}

@@ -83,18 +83,18 @@ export default function CuriosityVector(props: Props) {
     return (
       <div className="bg-black min-h-screen text-white p-8">
         <div className="max-w-4xl mx-auto">
-          <h1 className="text-4xl font-light mb-2">Curiosity Vector</h1>
-          <p className="text-white/40 mb-12">Which topic intrigues you most?</p>
+          <h1 className="text-4xl font-light mb-2 text-white">Curiosity Vector</h1>
+          <p className="text-white mb-12">Which topic intrigues you most?</p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {topics.map((topic) => (
               <button
                 key={topic.id}
                 onClick={() => handleTopicSelect(topic.id)}
-                className="group border border-white/15 rounded-lg p-6 hover:border-[#c0c0c0] hover:bg-[#c0c0c0] transition text-left"
+                className="group border border-white/40 rounded-lg p-6 hover:border-white hover:bg-white transition text-left"
               >
-                <h2 className="text-xl font-bold mb-2 group-hover:text-black">{topic.title}</h2>
-                <p className="text-white/50 group-hover:text-black/70">{topic.description}</p>
+                <h2 className="text-xl font-bold mb-2 text-white group-hover:text-black">{topic.title}</h2>
+                <p className="text-white/70 group-hover:text-black/70">{topic.description}</p>
               </button>
             ))}
           </div>
@@ -106,13 +106,13 @@ export default function CuriosityVector(props: Props) {
   return (
     <div className="bg-black min-h-screen text-white p-8">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-4xl font-light mb-2">Curiosity Vector</h1>
-        <p className="text-white/40 mb-8">How deep do you want to go?</p>
+        <h1 className="text-4xl font-light mb-2 text-white">Curiosity Vector</h1>
+        <p className="text-white mb-8">How deep do you want to go?</p>
 
         {selectedTopic && (
-          <div className="bg-white/5 border border-white/15 rounded-lg p-6 mb-12">
-            <p className="text-sm text-white/40 mb-2">Selected:</p>
-            <p className="text-xl font-bold">
+          <div className="bg-white/5 border border-white/40 rounded-lg p-6 mb-12">
+            <p className="text-sm text-white mb-2">Selected:</p>
+            <p className="text-xl font-bold text-white">
               {topics.find((t) => t.id === selectedTopic)?.title}
             </p>
           </div>
@@ -124,10 +124,10 @@ export default function CuriosityVector(props: Props) {
               key={depth.id}
               onClick={() => handleDepthSelect(depth.id)}
               disabled={isSubmitting}
-              className="group border border-white/15 rounded-lg p-6 hover:border-[#c0c0c0] hover:bg-[#c0c0c0] transition text-left disabled:opacity-50"
+              className="group border border-white/40 rounded-lg p-6 hover:border-white hover:bg-white transition text-left disabled:opacity-50"
             >
-              <h2 className="text-xl font-bold mb-2 group-hover:text-black">{depth.label}</h2>
-              <p className="text-white/50 group-hover:text-black/70">{depth.time}</p>
+              <h2 className="text-xl font-bold mb-2 text-white group-hover:text-black">{depth.label}</h2>
+              <p className="text-white/70 group-hover:text-black/70">{depth.time}</p>
             </button>
           ))}
         </div>

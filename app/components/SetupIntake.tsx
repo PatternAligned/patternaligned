@@ -64,29 +64,6 @@ const TONE_OPTIONS = [
   { id: 'provocative', label: 'Provocative' },
 ];
 
-const TOOLS = [
-  { id: 'vscode', label: 'VS Code' },
-  { id: 'claude_code', label: 'Claude Code' },
-  { id: 'cursor', label: 'Cursor' },
-  { id: 'terminal', label: 'Terminal' },
-  { id: 'github', label: 'GitHub' },
-  { id: 'slack', label: 'Slack' },
-  { id: 'linear', label: 'Linear' },
-  { id: 'notion', label: 'Notion' },
-  { id: 'figma', label: 'Figma' },
-  { id: 'vercel', label: 'Vercel' },
-  { id: 'render', label: 'Render' },
-  { id: 'supabase', label: 'Supabase' },
-  { id: 'postgres', label: 'PostgreSQL' },
-  { id: 'docker', label: 'Docker' },
-  { id: 'aws', label: 'AWS' },
-  { id: 'gcp', label: 'GCP' },
-  { id: 'jira', label: 'Jira' },
-  { id: 'airtable', label: 'Airtable' },
-  { id: 'retool', label: 'Retool' },
-  { id: 'postman', label: 'Postman' },
-];
-
 function MultiSelect({
   options,
   selected,
@@ -111,7 +88,7 @@ function MultiSelect({
             className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-all ${
               active
                 ? 'bg-white text-black border-white'
-                : 'bg-transparent border-white/20 text-white/60 hover:border-[#c0c0c0] hover:bg-[#c0c0c0] hover:text-black'
+                : 'bg-transparent border-white/40 text-white hover:border-white hover:bg-white hover:text-black'
             }`}
           >
             {opt.label}
@@ -122,10 +99,10 @@ function MultiSelect({
   );
 }
 
-const labelClass = 'block text-xs font-semibold text-white/50 uppercase tracking-widest mb-3';
+const labelClass = 'block text-xs font-semibold text-white uppercase tracking-widest mb-3';
 const inputClass = `
-  w-full bg-white/5 border border-white/15 rounded-lg px-4 py-3 text-base text-white
-  placeholder-white/30 focus:outline-none focus:border-white/50 focus:bg-white/8
+  w-full bg-white/5 border border-white/40 rounded-lg px-4 py-3 text-base text-white
+  placeholder-white/40 focus:outline-none focus:border-white focus:bg-white/8
   transition-colors resize-none
 `.trim();
 
@@ -137,7 +114,7 @@ function loadSetupState() {
   } catch { return null; }
 }
 
-function saveSetupState(state: { useCases: string[]; goals: string; tones: string[]; tools: string[]; otherTools?: string }) {
+function saveSetupState(state: { useCases: string[]; goals: string; tones: string[]; novaName: string }) {
   try { sessionStorage.setItem(SETUP_STORAGE_KEY, JSON.stringify(state)); } catch {}
 }
 
@@ -146,19 +123,12 @@ export default function SetupIntake({ onComplete, onBack }: SetupIntakeProps) {
   const [useCases, setUseCases] = useState<string[]>(saved?.useCases || []);
   const [goals, setGoals] = useState(saved?.goals || '');
   const [tones, setTones] = useState<string[]>(saved?.tones || []);
-  const [tools, setTools] = useState<string[]>(saved?.tools || []);
-  const [otherTools, setOtherTools] = useState(saved?.otherTools || '');
+  const [novaName, setNovaName] = useState(saved?.novaName || 'Nova');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const persist = (patch: Partial<{ useCases: string[]; goals: string; tones: string[]; tools: string[] }>) => {
-    const state = { useCases, goals, tones, tools, otherTools, ...patch };
-    saveSetupState(state);
-  };
-
-  const persistOther = (val: string) => {
-    const state = { useCases, goals, tones, tools, otherTools: val };
-    saveSetupState(state as any);
+  const persist = (patch: Partial<{ useCases: string[]; goals: string; tones: string[]; novaName: string }>) => {
+    saveSetupState({ useCases, goals, tones, novaName, ...patch });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -166,14 +136,21 @@ export default function SetupIntake({ onComplete, onBack }: SetupIntakeProps) {
     setSaving(true);
     setError(null);
     try {
-      const res = await fetch('/api/user/preferences', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ use_cases: useCases, goals, tones, tools, other_tools: otherTools.split(',').map((t: string) => t.trim()).filter(Boolean) }),
-      });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || 'Failed to save');
+      const [prefsRes, configRes] = await Promise.all([
+        fetch('/api/user/preferences', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ use_cases: useCases, goals, tones }),
+        }),
+        fetch('/api/nova/configuration', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nova_name: novaName.trim() || 'Nova' }),
+        }),
+      ]);
+      if (!prefsRes.ok) {
+        const data = await prefsRes.json();
+        throw new Error(data.error || 'Failed to save preferences');
       }
       onComplete();
     } catch (err) {
@@ -186,9 +163,9 @@ export default function SetupIntake({ onComplete, onBack }: SetupIntakeProps) {
     <div className="min-h-screen bg-black px-6 py-12">
       <div className="w-full max-w-lg mx-auto">
         <div className="mb-10">
-          <p className="text-white/30 text-xs uppercase tracking-widest mb-3">PatternAligned</p>
+          <p className="text-white/40 text-xs uppercase tracking-widest mb-3">PatternAligned</p>
           <h1 className="text-4xl font-light text-white mb-2">How you work</h1>
-          <p className="text-white/40 text-sm">Shapes how Nova thinks and talks with you.</p>
+          <p className="text-white text-sm">Shapes how Nova thinks and talks with you.</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-10">
@@ -196,7 +173,7 @@ export default function SetupIntake({ onComplete, onBack }: SetupIntakeProps) {
             <label className={labelClass}>What do you use this for?</label>
             <MultiSelect options={USE_CASES} selected={useCases} onChange={(v) => { setUseCases(v); persist({ useCases: v }); }} />
             {useCases.length > 0 && (
-              <p className="text-white/25 text-xs mt-2">{useCases.length} selected</p>
+              <p className="text-white/40 text-xs mt-2">{useCases.length} selected</p>
             )}
           </div>
 
@@ -217,21 +194,15 @@ export default function SetupIntake({ onComplete, onBack }: SetupIntakeProps) {
           </div>
 
           <div>
-            <label className={labelClass}>Your stack</label>
-            <MultiSelect options={TOOLS} selected={tools} onChange={(v) => { setTools(v); persist({ tools: v }); }} />
-            {tools.length > 0 && (
-              <p className="text-white/25 text-xs mt-2">{tools.length} selected</p>
-            )}
-            <div className="mt-4">
-              <label className={labelClass}>Other tools</label>
-              <input
-                type="text"
-                placeholder="Tools not listed? Type them here (comma-separated)"
-                value={otherTools}
-                onChange={(e) => { setOtherTools(e.target.value); persistOther(e.target.value); }}
-                className={inputClass}
-              />
-            </div>
+            <label className={labelClass}>Nova is the default name — would you like to change it?</label>
+            <input
+              type="text"
+              placeholder="Nova"
+              value={novaName}
+              onChange={(e) => { setNovaName(e.target.value); persist({ novaName: e.target.value }); }}
+              className={inputClass.replace('resize-none', '')}
+            />
+            <p className="text-white text-xs mt-2">She'll answer to whatever you call her.</p>
           </div>
 
           {error && <p className="text-red-400 text-sm">{error}</p>}
@@ -253,11 +224,11 @@ export default function SetupIntake({ onComplete, onBack }: SetupIntakeProps) {
             <button
               type="button"
               onClick={onBack}
-              className="text-white/30 text-xs hover:text-white/60 transition-colors"
+              className="text-white text-xs hover:text-white/70 transition-colors"
             >
               ← Back
             </button>
-            <p className="text-white/20 text-xs">Step 2 of 4</p>
+            <p className="text-white text-xs">Step 2 of 4</p>
           </div>
         </div>
       </div>

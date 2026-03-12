@@ -128,9 +128,9 @@ export default function InteractiveInterviewUI() {
       <div className="max-w-2xl mx-auto">
 
         <div className="mb-8">
-          <p className="text-white/25 text-xs uppercase tracking-widest mb-3">PatternAligned</p>
-          <h1 className="text-3xl font-light mb-2">Cognitive Fingerprint</h1>
-          <p className="text-white/40 text-sm leading-relaxed">
+          <p className="text-white/40 text-xs uppercase tracking-widest mb-3">PatternAligned</p>
+          <h1 className="text-3xl font-light mb-2 text-white">Cognitive Fingerprint</h1>
+          <p className="text-white text-sm leading-relaxed">
             Answer thoroughly and honestly — the more detail you provide, the better Nova learns your tone, vibe, interaction style, and decision-making pattern.
           </p>
         </div>
@@ -203,8 +203,8 @@ export default function InteractiveInterviewUI() {
               <textarea
                 value={userAnswer}
                 onChange={(e) => setUserAnswer(e.target.value)}
-                placeholder="Type your answer here... Be natural and honest."
-                style={{ backgroundColor: '#1a1a1a', borderColor: 'rgba(192,192,192,0.3)', color: '#e0e0e0' }}
+                placeholder="Type your answer here. Be natural and honest."
+                style={{ backgroundColor: '#1a1a1a', borderColor: 'rgba(255,255,255,0.4)', color: '#ffffff' }}
                 className="w-full p-4 border rounded-xl resize-none focus:outline-none focus:border-white/50 transition text-sm placeholder-white/20"
                 rows={4}
                 disabled={loading}
@@ -220,7 +220,7 @@ export default function InteractiveInterviewUI() {
                 disabled={!userAnswer.trim() || loading}
                 className="py-3 bg-white text-black font-semibold rounded-xl disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/90 transition-colors"
               >
-                {loading ? 'Analyzing...' : 'Submit Answer'}
+                {loading ? 'Analyzing...' : 'Continue →'}
               </button>
               <p className="text-white/20 text-xs text-center">⌘↵ to submit</p>
             </form>

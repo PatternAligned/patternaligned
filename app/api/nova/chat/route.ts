@@ -17,13 +17,14 @@ const pool = new Pool({
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 async function getUserContext(userId: string) {
-  const [prefsResult, eventsResult, interviewResult] = await Promise.all([
+  const [prefsResult, eventsResult, interviewResult, configResult] = await Promise.all([
     pool.query(`SELECT use_cases, goals, tones, tools FROM user_preferences WHERE user_id = $1`, [userId]),
     pool.query(`SELECT metadata FROM behavioral_events WHERE user_id = $1 AND event_type = 'game_event'`, [userId]),
     pool.query(
       `SELECT claude_insights FROM interview_sessions WHERE user_id = $1 AND status = 'completed' ORDER BY created_at DESC LIMIT 1`,
       [userId]
     ),
+    pool.query(`SELECT nova_name FROM nova_configuration WHERE user_id = $1`, [userId]).catch(() => ({ rows: [] })),
   ]);
 
   const prefs = prefsResult.rows[0] || null;
@@ -53,7 +54,9 @@ async function getUserContext(userId: string) {
     if (insights.contradiction_profile?.preference) profile.contradiction = insights.contradiction_profile.preference;
   }
 
-  return { prefs, profile };
+  const novaName: string = configResult.rows[0]?.nova_name || 'Nova';
+
+  return { prefs, profile, novaName };
 }
 
 function extractGoalTags(text: string): string[] {
@@ -111,7 +114,7 @@ export async function POST(request: NextRequest) {
     const { message, history = [], session_id } = await request.json();
     if (!message) return NextResponse.json({ error: 'message required' }, { status: 400 });
 
-    const { prefs, profile } = await getUserContext(userId);
+    const { prefs, profile, novaName } = await getUserContext(userId);
 
     // Detect real-time vibe from recent user messages (current + last 5 from history)
     const recentUserMessages = [
@@ -123,7 +126,7 @@ export async function POST(request: NextRequest) {
     ];
     const vibe = detectVibe(recentUserMessages);
 
-    const systemPrompt = buildNovaSystemPrompt(prefs, profile, undefined, vibe);
+    const systemPrompt = buildNovaSystemPrompt(prefs, profile, undefined, vibe, novaName);
 
     const messages: Anthropic.MessageParam[] = [
       ...history.map((h: { role: string; content: string }) => ({

@@ -68,15 +68,15 @@ export default function GameSequencer(props: Props) {
             <div className="flex items-center gap-4">
               <button
                 onClick={handleBack}
-                className="text-white/30 text-sm hover:text-white/60 transition-colors"
+                className="text-white text-sm hover:text-white/70 transition-colors"
               >
                 ← Back
               </button>
-              <span className="text-sm text-white/40">
+              <span className="text-sm text-white">
                 Assessment {currentGameIndex + 1} of {games.length}
               </span>
             </div>
-            <span className="text-sm text-white/40">{currentGame.name}</span>
+            <span className="text-sm text-white">{currentGame.name}</span>
           </div>
           <div className="w-full bg-white/8 rounded-full h-px">
             <div

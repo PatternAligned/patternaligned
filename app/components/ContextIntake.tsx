@@ -8,12 +8,12 @@ interface ContextIntakeProps {
 }
 
 const inputClass = `
-  w-full bg-white/5 border border-white/15 rounded-lg px-4 py-3 text-base text-white
-  placeholder-white/30 focus:outline-none focus:border-white/50 focus:bg-white/8
+  w-full bg-white/5 border border-white/40 rounded-lg px-4 py-3 text-base text-white
+  placeholder-white/40 focus:outline-none focus:border-white focus:bg-white/8
   transition-colors
 `.trim();
 
-const labelClass = 'block text-xs font-semibold text-white/50 uppercase tracking-widest mb-2';
+const labelClass = 'block text-xs font-semibold text-white uppercase tracking-widest mb-2';
 
 const STORAGE_KEY = 'onboarding_context';
 
@@ -61,9 +61,9 @@ export default function ContextIntake({ onComplete, onBack }: ContextIntakeProps
     <div className="min-h-screen bg-black flex items-center justify-center px-6">
       <div className="w-full max-w-lg">
         <div className="mb-10">
-          <p className="text-white/30 text-xs uppercase tracking-widest mb-3">PatternAligned</p>
+          <p className="text-white/40 text-xs uppercase tracking-widest mb-3">PatternAligned</p>
           <h1 className="text-4xl font-light text-white mb-2">A bit about you</h1>
-          <p className="text-white/40 text-sm">Context shapes how the system thinks with you.</p>
+          <p className="text-white text-sm">Context shapes how the system thinks with you.</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -130,11 +130,11 @@ export default function ContextIntake({ onComplete, onBack }: ContextIntakeProps
             <button
               type="button"
               onClick={onBack}
-              className="text-white/30 text-xs hover:text-white/60 transition-colors"
+              className="text-white text-xs hover:text-white/70 transition-colors"
             >
               ← Back
             </button>
-            <p className="text-white/20 text-xs">Step 1 of 4</p>
+            <p className="text-white text-xs">Step 1 of 4</p>
           </div>
         </div>
       </div>

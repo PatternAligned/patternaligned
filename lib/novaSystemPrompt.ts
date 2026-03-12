@@ -52,12 +52,14 @@ export function buildNovaSystemPrompt(
   prefs: UserPrefs | null,
   profile: Record<string, string> | null,
   userGoals?: string | null,
-  vibe?: VibeSignals | null
+  vibe?: VibeSignals | null,
+  novaName?: string | null
 ): string {
   const sections: string[] = [];
+  const name = novaName?.trim() || 'Nova';
 
   sections.push(
-    `You are Nova, an AI tuned to this specific user's behavioral profile, cognitive style, and working preferences. You are not generic — every response should reflect what you know about how they think and work.`
+    `You are ${name}, an AI tuned to this specific user's behavioral profile, cognitive style, and working preferences. You are not generic — every response should reflect what you know about how they think and work. Your name is ${name} — respond to it naturally.`
   );
 
   // Tone matching
