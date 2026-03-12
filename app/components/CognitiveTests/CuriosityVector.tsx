@@ -91,10 +91,10 @@ export default function CuriosityVector(props: Props) {
               <button
                 key={topic.id}
                 onClick={() => handleTopicSelect(topic.id)}
-                className="group border border-white/40 rounded-lg p-6 hover:border-white hover:bg-white transition text-left"
+                className="group border border-white rounded-lg p-6 hover:border-white hover:bg-white transition text-left"
               >
                 <h2 className="text-xl font-bold mb-2 text-white group-hover:text-black">{topic.title}</h2>
-                <p className="text-white/70 group-hover:text-black/70">{topic.description}</p>
+                <p className="text-white group-hover:text-black/70">{topic.description}</p>
               </button>
             ))}
           </div>
@@ -110,7 +110,7 @@ export default function CuriosityVector(props: Props) {
         <p className="text-white mb-8">How deep do you want to go?</p>
 
         {selectedTopic && (
-          <div className="bg-white/5 border border-white/40 rounded-lg p-6 mb-12">
+          <div className="bg-white/5 border border-white rounded-lg p-6 mb-12">
             <p className="text-sm text-white mb-2">Selected:</p>
             <p className="text-xl font-bold text-white">
               {topics.find((t) => t.id === selectedTopic)?.title}
@@ -124,15 +124,15 @@ export default function CuriosityVector(props: Props) {
               key={depth.id}
               onClick={() => handleDepthSelect(depth.id)}
               disabled={isSubmitting}
-              className="group border border-white/40 rounded-lg p-6 hover:border-white hover:bg-white transition text-left disabled:opacity-50"
+              className="group border border-white rounded-lg p-6 hover:border-white hover:bg-white transition text-left disabled:opacity-50"
             >
               <h2 className="text-xl font-bold mb-2 text-white group-hover:text-black">{depth.label}</h2>
-              <p className="text-white/70 group-hover:text-black/70">{depth.time}</p>
+              <p className="text-white group-hover:text-black/70">{depth.time}</p>
             </button>
           ))}
         </div>
 
-        {isSubmitting && <p className="text-center mt-8 text-white/40">Saving...</p>}
+        {isSubmitting && <p className="text-center mt-8 text-white">Saving...</p>}
       </div>
     </div>
   );

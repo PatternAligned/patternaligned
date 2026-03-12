@@ -25,34 +25,53 @@ export default function InterviewChat({
   const [confidence, setConfidence] = useState(0);
   const [showContinue, setShowContinue] = useState(false);
   const [initialized, setInitialized] = useState(false);
+  // Nova name: fetch from /api/nova/configuration, fallback to 'Nova'
+  const [novaName, setNovaName] = useState('Nova');
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading]);
 
+  // Fetch nova_name from configuration
+  useEffect(() => {
+    fetch('/api/nova/configuration')
+      .then((r) => r.json())
+      .then((data) => { if (data.nova_name) setNovaName(data.nova_name); })
+      .catch(() => {});
+  }, []);
+
   // Kick off the interview with Nova's opening message
   useEffect(() => {
     if (initialized || !(session?.user as any)?.id) return;
     setInitialized(true);
     initInterview();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [(session?.user as any)?.id]);
+
+  async function callAPI(msg: string, history: { role: string; content: string }[]) {
+    const res = await fetch('/api/interview/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: msg, history, session_id: sessionId, nova_name: novaName }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Unknown error' }));
+      throw new Error(err.error || `HTTP ${res.status}`);
+    }
+    return res.json();
+  }
 
   async function initInterview() {
     setLoading(true);
     try {
-      const res = await fetch('/api/interview/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: 'begin', history: [] }),
-      });
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
+      const data = await callAPI('begin', []);
       if (data.session_id) setSessionId(data.session_id);
       setConfidence(data.confidence || 0);
       setMessages([{ role: 'nova', content: data.message }]);
-    } catch {
-      setMessages([{ role: 'nova', content: "Great. Let's talk about how you actually work. When you're working on something and hit a wall — what's your first instinct?" }]);
+    } catch (e) {
+      const msg = `Great. Let's talk about how you actually work. When you're working on something and hit a wall — what's your first instinct?`;
+      setMessages([{ role: 'nova', content: msg }]);
     } finally {
       setLoading(false);
     }
@@ -65,19 +84,12 @@ export default function InterviewChat({
         role: m.role === 'nova' ? 'assistant' : 'user',
         content: m.content,
       }));
-
-      const res = await fetch('/api/interview/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: userMsg, history, session_id: sessionId }),
-      });
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
+      const data = await callAPI(userMsg, history);
       if (!sessionId && data.session_id) setSessionId(data.session_id);
       setConfidence(data.confidence || 0);
       if (data.shouldShowContinue) setShowContinue(true);
       setMessages((prev) => [...prev, { role: 'nova', content: data.message }]);
-    } catch {
+    } catch (e) {
       setMessages((prev) => [...prev, { role: 'nova', content: 'Something went wrong. Try again.' }]);
     } finally {
       setLoading(false);
@@ -89,8 +101,6 @@ export default function InterviewChat({
     const trimmed = input.trim();
     if (!trimmed || loading) return;
     setInput('');
-
-    // Capture history before state update
     const priorMessages = [...messages, { role: 'user' as const, content: trimmed }];
     setMessages(priorMessages);
     sendReply(trimmed, priorMessages);
@@ -98,8 +108,10 @@ export default function InterviewChat({
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col">
+
       {/* Header */}
       <div className="border-b border-white px-6 py-4 flex items-center justify-between">
+        {/* PatternAligned branding: ONLY P & A capitalized, never full caps */}
         <p className="text-white text-xs tracking-widest">PatternAligned · Interview</p>
         {confidence > 0 && (
           <div className="flex items-center gap-3">
@@ -128,7 +140,8 @@ export default function InterviewChat({
             <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               {msg.role === 'nova' ? (
                 <div className="flex flex-col gap-1 max-w-[80%]">
-                  <span className="text-white text-xs ml-1">Nova</span>
+                  {/* Use custom nova name, not hardcoded "Nova" */}
+                  <span className="text-white text-xs ml-1">{novaName}</span>
                   <div
                     className="px-5 py-4 rounded-2xl text-sm leading-relaxed text-white border border-white"
                     style={{ backgroundColor: '#0a0a0a' }}
@@ -139,6 +152,7 @@ export default function InterviewChat({
               ) : (
                 <div className="flex flex-col gap-1 items-end max-w-[80%]">
                   <span className="text-white text-xs mr-1">You</span>
+                  {/* Button text MUST be white (#FFFFFF) — bg-white uses black text intentionally for contrast */}
                   <div className="bg-white text-black px-5 py-4 rounded-2xl text-sm leading-relaxed">
                     {msg.content}
                   </div>
@@ -150,7 +164,7 @@ export default function InterviewChat({
           {loading && (
             <div className="flex justify-start">
               <div className="flex flex-col gap-1 max-w-[80%]">
-                <span className="text-white text-xs ml-1">Nova</span>
+                <span className="text-white text-xs ml-1">{novaName}</span>
                 <div
                   className="px-5 py-4 rounded-2xl border border-white"
                   style={{ backgroundColor: '#0a0a0a' }}
@@ -172,6 +186,7 @@ export default function InterviewChat({
       {/* Continue button — appears when confidence >= 72% */}
       {showContinue && (
         <div className="px-6 pb-2 max-w-2xl mx-auto w-full">
+          {/* Button text MUST be white (#FFFFFF) — bg-white uses black text intentionally for contrast on white bg */}
           <button
             onClick={onComplete}
             className="w-full bg-white text-black font-semibold py-4 px-6 rounded-xl hover:bg-white/90 transition-colors text-sm"
@@ -199,6 +214,7 @@ export default function InterviewChat({
               disabled={loading}
               className="flex-1 bg-transparent border border-white rounded-xl px-4 py-3 text-white text-sm placeholder-white/40 focus:outline-none resize-none disabled:opacity-40"
             />
+            {/* Button text MUST be white (#FFFFFF) — bg-white uses black text intentionally */}
             <button
               type="submit"
               disabled={!input.trim() || loading}
@@ -217,6 +233,7 @@ export default function InterviewChat({
           ← Back
         </button>
       </div>
+
     </div>
   );
 }

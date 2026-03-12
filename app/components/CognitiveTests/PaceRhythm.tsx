@@ -70,7 +70,7 @@ export default function PaceRhythm(props: Props) {
     <div className="bg-black min-h-screen text-white p-8">
       <div className="max-w-4xl mx-auto">
         <h1 className="text-4xl font-light mb-2">Pace Rhythm</h1>
-        <p className="text-white/40 mb-12">How do you naturally work?</p>
+        <p className="text-white mb-12">How do you naturally work?</p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {paces.map((pace) => (
@@ -78,16 +78,16 @@ export default function PaceRhythm(props: Props) {
               key={pace.id}
               onClick={() => handlePaceSelect(pace.id)}
               disabled={isSubmitting}
-              className="group border border-white/15 rounded-xl p-6 hover:border-[#c0c0c0] hover:bg-[#c0c0c0] transition text-left disabled:opacity-50"
+              className="group border border-white rounded-xl p-6 hover:border-[#c0c0c0] hover:bg-[#c0c0c0] transition text-left disabled:opacity-50"
             >
               <h2 className="text-xl font-medium mb-2 text-white group-hover:text-black">{pace.name}</h2>
-              <p className="text-white/50 group-hover:text-black/70 text-sm">{pace.description}</p>
+              <p className="text-white group-hover:text-black/70 text-sm">{pace.description}</p>
             </button>
           ))}
         </div>
 
         {isSubmitting && (
-          <p className="text-center mt-12 text-white/30 text-sm">Saving...</p>
+          <p className="text-center mt-12 text-white text-sm">Saving...</p>
         )}
       </div>
     </div>

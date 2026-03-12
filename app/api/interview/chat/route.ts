@@ -14,27 +14,28 @@ const pool = new Pool({
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-const INTERVIEW_SYSTEM_PROMPT = `You are Nova, conducting a behavioral interview to understand how this person thinks and works. Your job is to extract signal on 4 dimensions:
+function buildSystemPrompt(novaName: string): string {
+  const name = novaName?.trim() || 'Nova';
+  return `You are ${name}, conducting a behavioral interview to understand how this person thinks and works. Your name is ${name} — use it naturally if you reference yourself.
 
-1. COMPRESSION: How they prefer information — dense and compact vs. spacious and explained
-2. FRICTION: How they handle obstacles — navigate around them or push through directly
-3. EXECUTION: Their action style — rapid iteration ("do it now, refine later") vs. deliberate planning
-4. CONTRADICTION: Their tolerance for ambiguity — sit with open questions vs. resolve them quickly
+Your job is to extract signal on 4 dimensions:
+1. COMPRESSION: How they prefer information — dense/compact vs. spacious/explained
+2. FRICTION: How they handle obstacles — navigate around vs. push through
+3. EXECUTION: Their action style — rapid ("ship now, refine later") vs. deliberate planning
+4. CONTRADICTION: Tolerance for ambiguity — sit with open questions vs. resolve them
 
 RULES:
 - Ask ONE question at a time. Never more.
-- Questions should feel natural and conversational, not clinical or diagnostic.
-- Adapt based on what they just said — show you're listening.
-- If they give a vague answer, probe deeper with a follow-up.
-- After 5-8 exchanges you will have enough signal.
-- Do NOT label or categorize out loud — just ask questions that reveal the pattern.
+- Natural and conversational, not clinical.
+- Adapt based on what they said — show you're listening.
+- Probe deeper if they're vague.
+- After 5-8 exchanges you'll have enough signal.
+- Never label them out loud — just ask questions that reveal the pattern.
 
-OPENING LINE (first message only, when history is empty):
+OPENING (when history is empty — first message):
 "Great. Let's talk about how you actually work. I'll ask some questions to understand your patterns better. When you're working on something and hit a wall — what's your first instinct?"
 
-For subsequent messages, ask the next most revealing follow-up based on what they said.
-
-At the very end of EVERY response, append a signal block in this exact format — it will be stripped before display:
+At the END of every response, append this signal block (stripped before display):
 <SIGNALS>
 {
   "compression": "dense" | "sparse" | null,
@@ -47,8 +48,9 @@ At the very end of EVERY response, append a signal block in this exact format �
 }
 </SIGNALS>
 
-Set confidence 0–100 based on how much clear signal you have. Set shouldShowContinue=true when confidence >= 72.
+Set confidence 0-100. Set shouldShowContinue=true when confidence >= 72.
 Only include a dimension in probesCompleted when you have clear signal on it.`;
+}
 
 function parseSignals(raw: string): {
   cleanText: string;
@@ -76,7 +78,6 @@ function parseSignals(raw: string): {
   const cleanText = raw.replace(/<SIGNALS>[\s\S]*?<\/SIGNALS>/g, '').trim();
 
   if (!match) return { cleanText, signals: defaults };
-
   try {
     const parsed = JSON.parse(match[1].trim());
     return { cleanText, signals: { ...defaults, ...parsed } };
@@ -85,7 +86,8 @@ function parseSignals(raw: string): {
   }
 }
 
-async function ensureTable() {
+async function ensureTables() {
+  // Create interview_sessions if not exists
   await pool.query(`
     CREATE TABLE IF NOT EXISTS interview_sessions (
       id SERIAL PRIMARY KEY,
@@ -97,14 +99,29 @@ async function ensureTable() {
       updated_at TIMESTAMPTZ DEFAULT NOW()
     )
   `);
+
+  // Migrate: add columns that may be missing in older schemas
+  await pool.query(`ALTER TABLE interview_sessions ADD COLUMN IF NOT EXISTS session_id TEXT`).catch(() => {});
+  await pool.query(`ALTER TABLE interview_sessions ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW()`).catch(() => {});
+
+  // Create cognitive_baselines if not exists
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS cognitive_baselines (
+      id SERIAL PRIMARY KEY,
+      user_id TEXT NOT NULL UNIQUE,
+      baseline_version INTEGER DEFAULT 1,
+      directness_pct INTEGER DEFAULT 0,
+      sarcasm_pct INTEGER DEFAULT 0,
+      execution_pct INTEGER DEFAULT 0,
+      friction_tolerance_pct INTEGER DEFAULT 0,
+      collaboration_pct INTEGER DEFAULT 0,
+      contradiction_acceptance_pct INTEGER DEFAULT 0,
+      created_from_interview_at TIMESTAMPTZ
+    )
+  `).catch(() => {});
 }
 
-async function upsertSession(
-  userId: string,
-  sessionId: string,
-  status: string,
-  insights: object
-) {
+async function upsertSession(userId: string, sessionId: string, status: string, insights: object) {
   const existing = await pool.query(
     `SELECT id FROM interview_sessions WHERE session_id = $1 AND user_id = $2`,
     [sessionId, userId]
@@ -112,8 +129,7 @@ async function upsertSession(
 
   if (existing.rows.length) {
     await pool.query(
-      `UPDATE interview_sessions
-       SET status = $1, claude_insights = $2, updated_at = NOW()
+      `UPDATE interview_sessions SET status = $1, claude_insights = $2, updated_at = NOW()
        WHERE session_id = $3 AND user_id = $4`,
       [status, JSON.stringify(insights), sessionId, userId]
     );
@@ -126,6 +142,37 @@ async function upsertSession(
   }
 }
 
+async function writeBaselines(
+  userId: string,
+  signals: { compression: string | null; friction: string | null; execution: string | null; contradiction: string | null },
+  confidence: number
+) {
+  const c = confidence;
+  const directness_pct = signals.compression ? Math.min(95, Math.round(c * 0.9)) : Math.min(50, Math.round(c * 0.45));
+  const execution_pct = signals.execution ? Math.min(95, Math.round(c * 0.95)) : Math.min(50, Math.round(c * 0.45));
+  const friction_tolerance_pct = signals.friction ? Math.min(95, Math.round(c * 0.9)) : Math.min(50, Math.round(c * 0.45));
+  const collaboration_pct = Math.min(65, Math.round(c * 0.6));
+  const contradiction_acceptance_pct = signals.contradiction ? Math.min(95, Math.round(c * 0.85)) : Math.min(50, Math.round(c * 0.45));
+  const sarcasm_pct = Math.min(40, Math.round(c * 0.3));
+
+  await pool.query(
+    `INSERT INTO cognitive_baselines
+       (user_id, baseline_version, directness_pct, sarcasm_pct, execution_pct,
+        friction_tolerance_pct, collaboration_pct, contradiction_acceptance_pct, created_from_interview_at)
+     VALUES ($1, 1, $2, $3, $4, $5, $6, $7, NOW())
+     ON CONFLICT (user_id) DO UPDATE SET
+       directness_pct = $2,
+       sarcasm_pct = $3,
+       execution_pct = $4,
+       friction_tolerance_pct = $5,
+       collaboration_pct = $6,
+       contradiction_acceptance_pct = $7,
+       baseline_version = cognitive_baselines.baseline_version + 1,
+       created_from_interview_at = NOW()`,
+    [userId, directness_pct, sarcasm_pct, execution_pct, friction_tolerance_pct, collaboration_pct, contradiction_acceptance_pct]
+  );
+}
+
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -134,14 +181,14 @@ export async function POST(request: NextRequest) {
     }
     const userId = (session.user as any).id;
 
-    const { message, history = [], session_id } = await request.json();
+    const { message, history = [], session_id, nova_name } = await request.json();
     if (!message) return NextResponse.json({ error: 'message required' }, { status: 400 });
 
-    await ensureTable();
+    await ensureTables();
 
     const chatSessionId = session_id || `interview-${userId}-${Date.now()}`;
+    const systemPrompt = buildSystemPrompt(nova_name || 'Nova');
 
-    // Build message array
     const messages: Anthropic.MessageParam[] = [
       ...history.map((h: { role: string; content: string }) => ({
         role: h.role as 'user' | 'assistant',
@@ -150,11 +197,10 @@ export async function POST(request: NextRequest) {
       { role: 'user', content: message },
     ];
 
-    // Get Nova's response
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: 512,
-      system: INTERVIEW_SYSTEM_PROMPT,
+      system: systemPrompt,
       messages,
     });
 
@@ -165,61 +211,54 @@ export async function POST(request: NextRequest) {
     const shouldShowContinue = signals.shouldShowContinue;
     const status = shouldShowContinue ? 'completed' : 'in_progress';
 
-    // Build insights payload
     let overallSummary: string | null = null;
 
-    // If we have enough signal, generate a work style summary
     if (shouldShowContinue) {
       try {
         const summaryRes = await anthropic.messages.create({
           model: 'claude-sonnet-4-6',
           max_tokens: 250,
-          system:
-            'You synthesize behavioral interview patterns into a 2-3 sentence work style narrative. Be specific, reference what was actually said, not generic. Write in third person about "this person".',
+          system: 'Synthesize behavioral interview patterns into a 2-3 sentence work style narrative. Be specific — reference what was actually said. Write in third person about "this person". No generic phrases.',
           messages: [
             ...messages,
             { role: 'assistant', content: cleanText },
-            {
-              role: 'user',
-              content:
-                'Write a 2-3 sentence work style summary based on everything discussed. Be specific and direct.',
-            },
+            { role: 'user', content: 'Write a 2-3 sentence work style summary based on everything discussed.' },
           ],
         });
-        overallSummary =
-          summaryRes.content[0].type === 'text' ? summaryRes.content[0].text : null;
-      } catch {
-        overallSummary = null;
+        overallSummary = summaryRes.content[0].type === 'text' ? summaryRes.content[0].text : null;
+      } catch (e) {
+        console.error('Summary generation failed:', e);
       }
     }
 
+    const confidenceScores = {
+      directness: signals.compression ? Math.min(95, Math.round(confidence * 0.9)) : Math.min(50, Math.round(confidence * 0.45)),
+      execution: signals.execution ? Math.min(95, Math.round(confidence * 0.95)) : Math.min(50, Math.round(confidence * 0.45)),
+      friction_tolerance: signals.friction ? Math.min(95, Math.round(confidence * 0.9)) : Math.min(50, Math.round(confidence * 0.45)),
+      collaboration: Math.min(65, Math.round(confidence * 0.6)),
+      contradiction_acceptance: signals.contradiction ? Math.min(95, Math.round(confidence * 0.85)) : Math.min(50, Math.round(confidence * 0.45)),
+      cognitive_load: signals.compression ? Math.min(90, Math.round(confidence * 0.8)) : Math.min(45, Math.round(confidence * 0.4)),
+    };
+
     const insights = {
-      compression_profile: signals.compression
-        ? { preference: signals.compression, description: '' }
-        : null,
-      friction_profile: signals.friction
-        ? { preference: signals.friction, description: '' }
-        : null,
-      execution_profile: signals.execution
-        ? { preference: signals.execution, description: '' }
-        : null,
-      contradiction_profile: signals.contradiction
-        ? { preference: signals.contradiction, description: '' }
-        : null,
+      compression_profile: signals.compression ? { preference: signals.compression, description: '' } : null,
+      friction_profile: signals.friction ? { preference: signals.friction, description: '' } : null,
+      execution_profile: signals.execution ? { preference: signals.execution, description: '' } : null,
+      contradiction_profile: signals.contradiction ? { preference: signals.contradiction, description: '' } : null,
       overall_summary: overallSummary,
       confidence_score: confidence / 100,
-      confidence_scores: {
-        directness: signals.compression ? Math.min(95, Math.round(confidence * 0.9)) : Math.min(55, Math.round(confidence * 0.5)),
-        execution: signals.execution ? Math.min(95, Math.round(confidence * 0.95)) : Math.min(55, Math.round(confidence * 0.5)),
-        friction_tolerance: signals.friction ? Math.min(95, Math.round(confidence * 0.9)) : Math.min(55, Math.round(confidence * 0.5)),
-        collaboration: Math.min(60, Math.round(confidence * 0.55)),
-        contradiction_acceptance: signals.contradiction ? Math.min(95, Math.round(confidence * 0.85)) : Math.min(55, Math.round(confidence * 0.5)),
-        cognitive_load: signals.compression ? Math.min(90, Math.round(confidence * 0.8)) : Math.min(50, Math.round(confidence * 0.45)),
-      },
+      confidence_scores: confidenceScores,
       probes_completed: signals.probesCompleted,
     };
 
     await upsertSession(userId, chatSessionId, status, insights);
+
+    // Write to cognitive_baselines when interview is complete
+    if (shouldShowContinue) {
+      await writeBaselines(userId, signals, confidence).catch((e) => {
+        console.error('Failed to write cognitive baselines:', e);
+      });
+    }
 
     return NextResponse.json({
       message: cleanText,
@@ -229,7 +268,8 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
-    console.error('Interview chat error:', msg);
+    const stack = error instanceof Error ? error.stack : '';
+    console.error('Interview chat error:', msg, stack);
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 }

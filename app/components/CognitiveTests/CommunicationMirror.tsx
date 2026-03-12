@@ -94,7 +94,7 @@ export default function CommunicationMirror(props: Props) {
     <div className="bg-black min-h-screen text-white p-8">
       <div className="max-w-4xl mx-auto">
         <h1 className="text-4xl font-light mb-2">Communication Mirror</h1>
-        <p className="text-white/40 mb-12">How do you prefer to receive information?</p>
+        <p className="text-white mb-12">How do you prefer to receive information?</p>
 
         <div className="space-y-4">
           {styles.map((style) => (
@@ -102,18 +102,18 @@ export default function CommunicationMirror(props: Props) {
               key={style.id}
               onClick={() => handleStyleSelect(style.id)}
               disabled={isSubmitting}
-              className="group w-full border border-white/15 rounded-lg p-6 hover:border-[#c0c0c0] hover:bg-[#c0c0c0] transition text-left disabled:opacity-50"
+              className="group w-full border border-white rounded-lg p-6 hover:border-[#c0c0c0] hover:bg-[#c0c0c0] transition text-left disabled:opacity-50"
             >
               <h2 className="text-xl font-bold mb-2 group-hover:text-black">{style.name}</h2>
-              <p className="text-white/50 group-hover:text-black/70 mb-3">{style.description}</p>
-              <div className="bg-white/5 group-hover:bg-black/10 rounded p-3 text-sm text-white/60 group-hover:text-black/70 font-mono">
+              <p className="text-white group-hover:text-black/70 mb-3">{style.description}</p>
+              <div className="bg-white/5 group-hover:bg-black/10 rounded p-3 text-sm text-white group-hover:text-black/70 font-mono">
                 {style.example}
               </div>
             </button>
           ))}
         </div>
 
-        {isSubmitting && <p className="text-center mt-12 text-white/40">Saving...</p>}
+        {isSubmitting && <p className="text-center mt-12 text-white">Saving...</p>}
       </div>
     </div>
   );
