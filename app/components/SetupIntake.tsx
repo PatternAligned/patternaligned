@@ -126,6 +126,7 @@ export default function SetupIntake({ onComplete, onBack }: SetupIntakeProps) {
   const [novaName, setNovaName] = useState(saved?.novaName || 'Nova');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const canContinue = useCases.length >= 3 && goals.trim().length > 0;
 
   const persist = (patch: Partial<{ useCases: string[]; goals: string; tones: string[]; novaName: string }>) => {
     saveSetupState({ useCases, goals, tones, novaName, ...patch });
@@ -133,6 +134,10 @@ export default function SetupIntake({ onComplete, onBack }: SetupIntakeProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!canContinue) {
+      setError(useCases.length < 3 ? `Select at least 3 use cases (${useCases.length}/3 selected)` : 'Enter your goals');
+      return;
+    }
     setSaving(true);
     setError(null);
     try {
@@ -210,7 +215,7 @@ export default function SetupIntake({ onComplete, onBack }: SetupIntakeProps) {
 
           <button
             type="submit"
-            disabled={saving}
+            disabled={saving || !canContinue}
             className="w-full bg-white text-black font-semibold py-3 px-4 rounded-lg hover:bg-white/90 disabled:opacity-40 transition-colors"
           >
             {saving ? 'Saving...' : 'Continue →'}

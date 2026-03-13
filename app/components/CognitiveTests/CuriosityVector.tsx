@@ -91,6 +91,8 @@ export default function CuriosityVector(props: Props) {
               <button
                 key={topic.id}
                 onClick={() => handleTopicSelect(topic.id)}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleTopicSelect(topic.id); } }}
+                tabIndex={0}
                 className="group border border-white rounded-lg p-6 hover:border-white hover:bg-white transition text-left"
               >
                 <h2 className="text-xl font-bold mb-2 text-white group-hover:text-black">{topic.title}</h2>
@@ -123,6 +125,8 @@ export default function CuriosityVector(props: Props) {
             <button
               key={depth.id}
               onClick={() => handleDepthSelect(depth.id)}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleDepthSelect(depth.id); } }}
+              tabIndex={0}
               disabled={isSubmitting}
               className="group border border-white rounded-lg p-6 hover:border-white hover:bg-white transition text-left disabled:opacity-50"
             >

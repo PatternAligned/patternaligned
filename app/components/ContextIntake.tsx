@@ -29,6 +29,7 @@ export default function ContextIntake({ onComplete, onBack }: ContextIntakeProps
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const allFieldsFilled = !!(form.role && form.description && form.current_work && form.domain);
 
   const updateForm = (patch: Partial<typeof form>) => {
     const updated = { ...form, ...patch };
@@ -38,6 +39,7 @@ export default function ContextIntake({ onComplete, onBack }: ContextIntakeProps
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!allFieldsFilled) { setError('All fields are required'); return; }
     setSaving(true);
     setError(null);
     try {
@@ -116,7 +118,7 @@ export default function ContextIntake({ onComplete, onBack }: ContextIntakeProps
 
           <button
             type="submit"
-            disabled={saving}
+            disabled={saving || !allFieldsFilled}
             className="w-full bg-white text-black font-semibold py-3 px-4 rounded-lg hover:bg-white/90 disabled:opacity-40 transition-colors"
           >
             {saving ? 'Saving...' : 'Continue →'}
