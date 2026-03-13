@@ -80,6 +80,32 @@ Only include a dimension in probesCompleted when you have clear signal on it.${u
 ${Object.keys(userContext?.gameObservations || {}).length > 0 ? `\nGAME OBSERVATIONS (actual behavior, not stated):\n${Object.entries(userContext!.gameObservations).map(([k, v]) => `- ${k}: ${v}`).join('\n')}` : ''}`;
 }
 
+// Calibrate Claude's self-reported confidence against verifiable signal evidence.
+// Prevents over-reporting (e.g. 90% after 1 exchange) by capping based on what's actually detected.
+function calibrateConfidence(
+  claudeConfidence: number,
+  signals: { compression: string | null; friction: string | null; execution: string | null; contradiction: string | null; probesCompleted: string[] }
+): number {
+  const signalsDetected = [signals.compression, signals.friction, signals.execution, signals.contradiction].filter(Boolean).length;
+  const probesCompleted = signals.probesCompleted?.length || 0;
+
+  // Max confidence by number of signal dimensions with clear data
+  const capBySignals = signalsDetected === 0 ? 20
+    : signalsDetected === 1 ? 45
+    : signalsDetected === 2 ? 65
+    : signalsDetected === 3 ? 82
+    : 95;
+
+  // Max confidence by number of completed probes (each probe is ~20 pts)
+  const capByProbes = probesCompleted === 0 ? 25 : Math.min(95, probesCompleted * 22);
+
+  const cap = Math.min(capBySignals, capByProbes);
+
+  // Blend: 60% algorithmic cap governs, 40% Claude's own assessment
+  const blended = Math.round(cap * 0.6 + claudeConfidence * 0.4);
+  return Math.min(95, Math.max(0, blended));
+}
+
 function parseSignals(raw: string): {
   cleanText: string;
   signals: {
@@ -238,8 +264,8 @@ export async function POST(request: NextRequest) {
     const rawText = response.content[0].type === 'text' ? response.content[0].text : '';
     const { cleanText, signals } = parseSignals(rawText);
 
-    const confidence = signals.confidence;
-    const shouldShowContinue = signals.shouldShowContinue;
+    const confidence = calibrateConfidence(signals.confidence, signals);
+    const shouldShowContinue = confidence >= 72;
     const status = shouldShowContinue ? 'completed' : 'in_progress';
 
     let overallSummary: string | null = null;

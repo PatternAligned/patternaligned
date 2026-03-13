@@ -11,6 +11,31 @@ const pool2 = new Pool({
   ssl: { rejectUnauthorized: false },
 });
 
+// Derive preliminary cognitive baselines from stated preferences.
+// These are low-confidence estimates (~30-40%) that get overridden by interview data.
+function calculatePreferenceBaselines(use_cases: string[], tones: string[]) {
+  const directnessSignals = ['direct', 'blunt', 'no_fluff', 'concise', 'concise_2', 'peer'].filter((t) => tones.includes(t));
+  const directness_pct = Math.min(40, 15 + directnessSignals.length * 8);
+
+  const sarcasm_pct = tones.includes('sarcastic') ? 35 : tones.includes('witty') ? 20 : 10;
+
+  const rapidCases = ['shipping', 'debugging', 'testing', 'unblocking'].filter((u) => use_cases.includes(u));
+  const deliberateCases = ['planning', 'architecture', 'research', 'system_design', 'strategy'].filter((u) => use_cases.includes(u));
+  const execution_pct = Math.min(40, Math.max(10, 20 + (rapidCases.length - deliberateCases.length) * 5));
+
+  const collabSignals = ['brainstorming', 'hiring'].filter((u) => use_cases.includes(u)).length
+    + ['collaborative', 'warm', 'socratic'].filter((t) => tones.includes(t)).length;
+  const collaboration_pct = Math.min(40, 15 + collabSignals * 6);
+
+  const frictionCases = ['debugging', 'architecture', 'system_design', 'refactoring', 'performance', 'security'].filter((u) => use_cases.includes(u));
+  const friction_tolerance_pct = Math.min(40, 15 + frictionCases.length * 5);
+
+  const ambiguousCases = ['strategy', 'research', 'analysis', 'product', 'planning'].filter((u) => use_cases.includes(u));
+  const contradiction_acceptance_pct = Math.min(40, 15 + ambiguousCases.length * 5);
+
+  return { directness_pct, sarcasm_pct, execution_pct, friction_tolerance_pct, collaboration_pct, contradiction_acceptance_pct };
+}
+
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
@@ -79,6 +104,36 @@ export async function POST(request: NextRequest) {
         JSON.stringify(tools || []),
       ]
     );
+
+    // Write preliminary baselines from stated preferences (low confidence, version 0).
+    // Only sets baseline if no interview-based baseline (version >= 1) exists yet.
+    try {
+      const baselines = calculatePreferenceBaselines(use_cases || [], tones || []);
+      await pool.query(
+        `INSERT INTO cognitive_baselines
+           (user_id, baseline_version, directness_pct, sarcasm_pct, execution_pct,
+            friction_tolerance_pct, collaboration_pct, contradiction_acceptance_pct)
+         VALUES ($1, 0, $2, $3, $4, $5, $6, $7)
+         ON CONFLICT (user_id) DO UPDATE SET
+           directness_pct            = CASE WHEN cognitive_baselines.baseline_version < 1 THEN $2 ELSE cognitive_baselines.directness_pct END,
+           sarcasm_pct               = CASE WHEN cognitive_baselines.baseline_version < 1 THEN $3 ELSE cognitive_baselines.sarcasm_pct END,
+           execution_pct             = CASE WHEN cognitive_baselines.baseline_version < 1 THEN $4 ELSE cognitive_baselines.execution_pct END,
+           friction_tolerance_pct    = CASE WHEN cognitive_baselines.baseline_version < 1 THEN $5 ELSE cognitive_baselines.friction_tolerance_pct END,
+           collaboration_pct         = CASE WHEN cognitive_baselines.baseline_version < 1 THEN $6 ELSE cognitive_baselines.collaboration_pct END,
+           contradiction_acceptance_pct = CASE WHEN cognitive_baselines.baseline_version < 1 THEN $7 ELSE cognitive_baselines.contradiction_acceptance_pct END`,
+        [
+          userId,
+          baselines.directness_pct,
+          baselines.sarcasm_pct,
+          baselines.execution_pct,
+          baselines.friction_tolerance_pct,
+          baselines.collaboration_pct,
+          baselines.contradiction_acceptance_pct,
+        ]
+      );
+    } catch (e) {
+      console.error('Preference baseline write failed (non-blocking):', e instanceof Error ? e.message : e);
+    }
 
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (error) {
