@@ -14,7 +14,34 @@ const pool = new Pool({
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-function buildSystemPrompt(novaName: string): string {
+async function getUserContext(userId: string) {
+  try {
+    const [prefsResult, gameEventsResult] = await Promise.all([
+      pool.query(`SELECT use_cases, goals, tones FROM user_preferences WHERE user_id = $1`, [userId]).catch(() => ({ rows: [] })),
+      pool.query(`SELECT metadata FROM behavioral_events WHERE user_id = $1 AND event_type = 'game_event'`, [userId]).catch(() => ({ rows: [] })),
+    ]);
+
+    const prefs = prefsResult.rows[0] || null;
+
+    const gameObservations: Record<string, string> = {};
+    gameEventsResult.rows.forEach((row: any) => {
+      const meta = row.metadata || {};
+      const game = meta.game;
+      if (game === 'problem_approach' && meta.approach_style) gameObservations.problem_approach = meta.approach_style;
+      if (game === 'pace_rhythm' && meta.pace_preference) gameObservations.work_pace = meta.pace_preference;
+      if (game === 'communication_mirror' && meta.communication_style) gameObservations.communication_mode = meta.communication_style;
+      if (game === 'risk_openness' && meta.risk_tolerance) gameObservations.risk_posture = meta.risk_tolerance;
+      if (game === 'energy_mood_state' && meta.energy_pattern) gameObservations.energy_pattern = meta.energy_pattern;
+      if (game === 'curiosity_vector' && meta.topic_choice) gameObservations.curiosity_vector = meta.topic_choice;
+    });
+
+    return { prefs, gameObservations };
+  } catch {
+    return { prefs: null, gameObservations: {} };
+  }
+}
+
+function buildSystemPrompt(novaName: string, userContext?: { prefs: any; gameObservations: Record<string, string> }): string {
   const name = novaName?.trim() || 'Nova';
   return `You are ${name}, conducting a behavioral interview to understand how this person thinks and works. Your name is ${name} — use it naturally if you reference yourself.
 
@@ -49,7 +76,8 @@ At the END of every response, append this signal block (stripped before display)
 </SIGNALS>
 
 Set confidence 0-100. Set shouldShowContinue=true when confidence >= 72.
-Only include a dimension in probesCompleted when you have clear signal on it.`;
+Only include a dimension in probesCompleted when you have clear signal on it.${userContext?.prefs ? `\nUSER CONTEXT:\n- Goals: ${userContext.prefs.goals || 'not specified'}\n- Communication style: ${(userContext.prefs.tones || []).join(', ') || 'not specified'}\n- Use cases: ${(userContext.prefs.use_cases || []).join(', ') || 'not specified'}` : ''}
+${Object.keys(userContext?.gameObservations || {}).length > 0 ? `\nGAME OBSERVATIONS (actual behavior, not stated):\n${Object.entries(userContext!.gameObservations).map(([k, v]) => `- ${k}: ${v}`).join('\n')}` : ''}`;
 }
 
 function parseSignals(raw: string): {
@@ -187,8 +215,10 @@ export async function POST(request: NextRequest) {
     // ensureTables is best-effort — table likely already exists from Render migration
     await ensureTables().catch((e) => console.error('ensureTables failed (non-blocking):', e.message));
 
+    const userContext = await getUserContext(userId).catch(() => ({ prefs: null, gameObservations: {} }));
+
     const chatSessionId = session_id || `interview-${userId}-${Date.now()}`;
-    const systemPrompt = buildSystemPrompt(nova_name || 'Nova');
+    const systemPrompt = buildSystemPrompt(nova_name || 'Nova', userContext);
 
     const messages: Anthropic.MessageParam[] = [
       ...history.map((h: { role: string; content: string }) => ({

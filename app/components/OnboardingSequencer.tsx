@@ -7,26 +7,24 @@ import { useRouter } from 'next/navigation';
 import GameSequencer from './CognitiveTests/GameSequencer';
 import ContextIntake from './ContextIntake';
 import SetupIntake from './SetupIntake';
-import RelationshipModelSelector from './RelationshipModelSelector';
 import CognitiveProfile from './CognitiveProfile';
 import ConfidenceBreakdown from './ConfidenceBreakdown';
 import InterviewChat from './InterviewChat';
 
-// Flow: context → setup → relationship → interview_chat → cognitive_profile → confidence_breakdown → games → done
+// Flow: context → setup → games → interview_chat → cognitive_profile → confidence_breakdown
 type Phase =
   | 'context'
   | 'setup'
-  | 'relationship'
+  | 'games'
   | 'interview_chat'
   | 'cognitive_profile'
-  | 'confidence_breakdown'
-  | 'games';
+  | 'confidence_breakdown';
 
 const HISTORY_KEY = 'onboarding_phase_history';
 const HISTORY_VERSION = 'v3'; // bump this to invalidate stale sessionStorage
 const FORM_KEYS = ['onboarding_context', 'onboarding_setup', 'onboarding_game_index'];
 
-const VALID_PHASES = new Set(['context', 'setup', 'relationship', 'interview_chat', 'cognitive_profile', 'confidence_breakdown', 'games']);
+const VALID_PHASES = new Set(['context', 'setup', 'games', 'interview_chat', 'cognitive_profile', 'confidence_breakdown']);
 
 function loadHistory(): Phase[] {
   if (typeof window === 'undefined') return ['context'];
@@ -81,9 +79,16 @@ export default function OnboardingSequencer() {
     }
   };
 
-  const finish = () => {
+  const finish = async () => {
     sessionStorage.removeItem(HISTORY_KEY);
     FORM_KEYS.forEach((k) => { try { sessionStorage.removeItem(k); } catch {} });
+    try {
+      await fetch('/api/events/log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ event_type: 'onboarding_complete', metadata: { timestamp: new Date().toISOString() } }),
+      });
+    } catch {}
     window.location.href = '/dashboard';
   };
 
@@ -97,13 +102,13 @@ export default function OnboardingSequencer() {
       )}
       {currentPhase === 'setup' && (
         <SetupIntake
-          onComplete={() => goTo('relationship')}
+          onComplete={() => goTo('games')}
           onBack={goBack}
         />
       )}
-      {currentPhase === 'relationship' && (
-        <RelationshipModelSelector
-          onSelectionComplete={() => goTo('interview_chat')}
+      {currentPhase === 'games' && (
+        <GameSequencer
+          onAllGamesComplete={() => goTo('interview_chat')}
           onBack={goBack}
         />
       )}
@@ -121,13 +126,7 @@ export default function OnboardingSequencer() {
       )}
       {currentPhase === 'confidence_breakdown' && (
         <ConfidenceBreakdown
-          onComplete={() => goTo('games')}
-          onBack={goBack}
-        />
-      )}
-      {currentPhase === 'games' && (
-        <GameSequencer
-          onAllGamesComplete={finish}
+          onComplete={finish}
           onBack={goBack}
         />
       )}
