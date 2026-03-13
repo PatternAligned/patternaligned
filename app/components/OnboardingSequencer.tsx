@@ -23,21 +23,37 @@ type Phase =
   | 'games';
 
 const HISTORY_KEY = 'onboarding_phase_history';
+const HISTORY_VERSION = 'v3'; // bump this to invalidate stale sessionStorage
 const FORM_KEYS = ['onboarding_context', 'onboarding_setup', 'onboarding_game_index'];
+
+const VALID_PHASES = new Set(['context', 'setup', 'relationship', 'interview_chat', 'cognitive_profile', 'confidence_breakdown', 'games']);
 
 function loadHistory(): Phase[] {
   if (typeof window === 'undefined') return ['context'];
   try {
     const saved = sessionStorage.getItem(HISTORY_KEY);
-    if (saved) return JSON.parse(saved);
-    FORM_KEYS.forEach((k) => { try { sessionStorage.removeItem(k); } catch {} });
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      // Validate: must be an array, have a version match, and all phases must be valid
+      if (
+        Array.isArray(parsed) &&
+        parsed[0] === HISTORY_VERSION &&
+        parsed.slice(1).every((p: string) => VALID_PHASES.has(p))
+      ) {
+        return parsed.slice(1) as Phase[];
+      }
+      // Stale or invalid — clear it
+      sessionStorage.removeItem(HISTORY_KEY);
+      FORM_KEYS.forEach((k) => { try { sessionStorage.removeItem(k); } catch {} });
+    }
     return ['context'];
   } catch { return ['context']; }
 }
 
 function saveHistory(h: Phase[]) {
-  try { sessionStorage.setItem(HISTORY_KEY, JSON.stringify(h)); } catch {}
+  try { sessionStorage.setItem(HISTORY_KEY, JSON.stringify([HISTORY_VERSION, ...h])); } catch {}
 }
+
 
 export default function OnboardingSequencer() {
   const router = useRouter();
