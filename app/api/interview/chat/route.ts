@@ -16,12 +16,16 @@ const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 async function getUserContext(userId: string) {
   try {
-    const [prefsResult, gameEventsResult] = await Promise.all([
+    const [prefsResult, gameEventsResult, profileResult, baselinesResult] = await Promise.all([
       pool.query(`SELECT use_cases, goals, tones FROM user_preferences WHERE user_id = $1`, [userId]).catch(() => ({ rows: [] })),
       pool.query(`SELECT metadata FROM behavioral_events WHERE user_id = $1 AND event_type = 'game_event'`, [userId]).catch(() => ({ rows: [] })),
+      pool.query(`SELECT role, description, current_work, domain FROM user_profiles WHERE user_id = $1`, [userId]).catch(() => ({ rows: [] })),
+      pool.query(`SELECT directness_pct, sarcasm_pct, execution_pct, friction_tolerance_pct, collaboration_pct, contradiction_acceptance_pct, baseline_version FROM cognitive_baselines WHERE user_id = $1`, [userId]).catch(() => ({ rows: [] })),
     ]);
 
     const prefs = prefsResult.rows[0] || null;
+    const profile = profileResult.rows[0] || null;
+    const baselines = baselinesResult.rows[0] || null;
 
     const gameObservations: Record<string, string> = {};
     gameEventsResult.rows.forEach((row: any) => {
@@ -35,32 +39,148 @@ async function getUserContext(userId: string) {
       if (game === 'curiosity_vector' && meta.topic_choice) gameObservations.curiosity_vector = meta.topic_choice;
     });
 
-    return { prefs, gameObservations };
+    return { prefs, gameObservations, profile, baselines };
   } catch {
-    return { prefs: null, gameObservations: {} };
+    return { prefs: null, gameObservations: {}, profile: null, baselines: null };
   }
 }
 
-function buildSystemPrompt(novaName: string, userContext?: { prefs: any; gameObservations: Record<string, string> }): string {
-  const name = novaName?.trim() || 'Nova';
-  return `You are ${name}, conducting a behavioral interview to understand how this person thinks and works. Your name is ${name} — use it naturally if you reference yourself.
+// Maps tone IDs from user_preferences to explicit behavioral instructions for Nova.
+const TONE_INSTRUCTIONS: Record<string, string> = {
+  direct:          'Direct — cut to the point, no preamble, no softening.',
+  blunt:           'Blunt — say what you observe without cushioning it.',
+  sarcastic:       'Sarcastic — use sharp wit as a trust signal, never cruel.',
+  analytical:      'Analytical — dig into logic, systems, and second-order effects.',
+  no_fluff:        'No corporate speak — talk like a human, zero jargon.',
+  peer:            'Peer not assistant — equals, no hierarchy, no "how can I help" energy.',
+  devils_advocate: "Devil's advocate — argue the opposite, push back on assumptions.",
+  concise:         'Ruthlessly concise — pack maximum signal into minimum words.',
+  concise_2:       'Concise — short and dense.',
+  warm:            'Warm but focused — genuine interest without being soft.',
+  socratic:        'Socratic — ask questions that make them discover the answer.',
+  challenging:     'Challenging — make them justify every answer.',
+  questioning:     'Questioning — push for the "why" behind everything.',
+  skeptical:       'Skeptical — ask for evidence and specific examples, not generalities.',
+  verbose:         'Verbose — explore ideas in depth when the signal demands it.',
+  iterative:       'Iterative — explicitly build on each previous answer.',
+  provocative:     'Provocative — say the uncomfortable thing if it extracts more signal.',
+  witty:           'Witty — use humor to keep them engaged and off-guard.',
+  systems_thinking:'Systems thinking — frame everything in terms of systems and patterns.',
+  encouraging:     'Encouraging — affirm what you see before probing deeper.',
+  humble:          'Humble — stay curious, not declarative.',
+  hype:            'High energy — match and amplify their enthusiasm.',
+  collaborative:   'Collaborative — frame everything as figuring this out together.',
+  vulnerable:      'Vulnerable — show genuine curiosity to make them open up.',
+};
 
-Your job is to extract signal on 4 dimensions:
+// Build a personalized first question based on actual contradictions in the user's data.
+// Falls back to role/goals context if no contradictions found.
+function buildPersonalizedOpening(
+  profile: any,
+  prefs: any,
+  gameObservations: Record<string, string>
+): string {
+  const tones: string[] = prefs?.tones || [];
+  const useCases: string[] = prefs?.use_cases || [];
+
+  // Contradiction: stated "direct/concise" but game showed narrative communication
+  if ((tones.includes('direct') || tones.includes('concise') || tones.includes('concise_2')) && gameObservations.communication_mode === 'Narrative') {
+    return `You said you want direct, concise communication — but in the game you reached for the full-context answer. Do you actually want concise, or do you just think you should?`;
+  }
+
+  // Contradiction: stated "analytical" tone but game showed rapid/intuitive problem approach
+  if (tones.includes('analytical') && gameObservations.problem_approach && ['Intuitive', 'Delegative'].includes(gameObservations.problem_approach)) {
+    return `You flagged analytical as your preferred style, but your instinct in the problem game was ${gameObservations.problem_approach.toLowerCase()}. When you say analytical — is that how you think, or how you want others to talk to you?`;
+  }
+
+  // Contradiction: shipping fast use case but deliberate/analytical problem approach
+  if (useCases.includes('shipping') && gameObservations.problem_approach === 'Analytical') {
+    return `You want to ship fast — it's literally in your use cases. But in the problem game you went analytical first. How do you actually reconcile those two instincts?`;
+  }
+
+  // Contradiction: sarcastic tone + warm tone (stated tension)
+  if (tones.includes('sarcastic') && tones.includes('warm')) {
+    return `You picked both sarcastic and warm. That's an interesting combination. Is the sarcasm a filter — you use it to figure out who can handle you — or is it just how your brain works?`;
+  }
+
+  // Contradiction: stated "partner mode" / collaborative but solo problem approach in game
+  if ((tones.includes('collaborative') || useCases.includes('brainstorming')) && gameObservations.problem_approach === 'Intuitive') {
+    return `You lean collaborative, but in the problem game your instinct was to go on gut alone. When do you actually want a partner versus when do you prefer to figure it out solo?`;
+  }
+
+  // No contradiction found — use role + current work for personalized question
+  if (profile?.role && profile?.current_work) {
+    return `You're a ${profile.role} working on ${profile.current_work}. When you're deep in execution mode — what's the thing most likely to knock you off course?`;
+  }
+  if (profile?.role) {
+    return `You're a ${profile.role}. When you're working on something and hit a wall — what's your first instinct?`;
+  }
+  if (prefs?.goals) {
+    const goalSnip = prefs.goals.length > 80 ? prefs.goals.substring(0, 80) + '…' : prefs.goals;
+    return `You said your goal is: "${goalSnip}". What's the biggest thing standing between you and that right now?`;
+  }
+
+  // Absolute fallback
+  return `When you're working on something and hit a wall — what's your first instinct?`;
+}
+
+function buildSystemPrompt(
+  novaName: string,
+  userContext?: { prefs: any; gameObservations: Record<string, string>; profile: any; baselines: any }
+): string {
+  const name = novaName?.trim() || 'Nova';
+  const { prefs, gameObservations = {}, profile, baselines } = userContext || {};
+
+  const selectedTones: string[] = prefs?.tones || [];
+  const toneLines = selectedTones
+    .filter((t) => TONE_INSTRUCTIONS[t])
+    .map((t) => `- ${TONE_INSTRUCTIONS[t]}`)
+    .join('\n');
+
+  const personalizedOpening = buildPersonalizedOpening(profile, prefs, gameObservations);
+
+  const profileSection = [
+    profile?.role && `- Role: ${profile.role}`,
+    profile?.description && `- What they do: ${profile.description}`,
+    profile?.current_work && `- Current work: ${profile.current_work}`,
+    profile?.domain && `- Domain: ${profile.domain}`,
+    prefs?.goals && `- Goals: ${prefs.goals}`,
+    prefs?.use_cases?.length && `- Use cases: ${prefs.use_cases.join(', ')}`,
+  ].filter(Boolean).join('\n');
+
+  const baselineSection = baselines ? `\nPRELIMINARY BASELINES (from onboarding — verify and fill gaps):
+- Directness: ${baselines.directness_pct ?? '?'}%
+- Execution: ${baselines.execution_pct ?? '?'}%
+- Friction tolerance: ${baselines.friction_tolerance_pct ?? '?'}%
+- Collaboration: ${baselines.collaboration_pct ?? '?'}%
+- Contradiction acceptance: ${baselines.contradiction_acceptance_pct ?? '?'}%
+(Source confidence: ${baselines.baseline_version === 0 ? 'stated preferences only — treat as hypothesis, not fact' : 'interview-informed'})` : '';
+
+  const gameSection = Object.keys(gameObservations).length > 0
+    ? `\nGAME OBSERVATIONS (actual behavior — more reliable than stated preferences):\n${Object.entries(gameObservations).map(([k, v]) => `- ${k.replace(/_/g, ' ')}: ${v}`).join('\n')}`
+    : '';
+
+  return `You are ${name}, conducting a behavioral interview. Your name is ${name} — use it naturally.
+${profileSection ? `\nUSER PROFILE:\n${profileSection}` : ''}${toneLines ? `\nSTATED COMMUNICATION PREFERENCES — match this voice:\n${toneLines}` : ''}${baselineSection}${gameSection}
+
+YOUR MISSION:
+Extract signal on 4 dimensions through conversation:
 1. COMPRESSION: How they prefer information — dense/compact vs. spacious/explained
 2. FRICTION: How they handle obstacles — navigate around vs. push through
 3. EXECUTION: Their action style — rapid ("ship now, refine later") vs. deliberate planning
 4. CONTRADICTION: Tolerance for ambiguity — sit with open questions vs. resolve them
 
 RULES:
-- Ask ONE question at a time. Never more.
-- Natural and conversational, not clinical.
-- Adapt based on what they said — show you're listening.
-- Probe deeper if they're vague.
-- After 5-8 exchanges you'll have enough signal.
+- ONE question at a time. Never more.
+- Every follow-up MUST reference what they just said or a contradiction with earlier data.
+- Probe deeper when they're vague — don't accept surface answers.
+- After 5-8 exchanges you'll have clear signal.
 - Never label them out loud — just ask questions that reveal the pattern.
+- You are NOT a therapist. You are a peer who has studied their data.
+- Make them think: "Oh shit, she already knows how I actually work."
 
-OPENING (when history is empty — first message):
-"Great. Let's talk about how you actually work. I'll ask some questions to understand your patterns better. When you're working on something and hit a wall — what's your first instinct?"
+OPENING (when history is empty — use this exact question):
+"${personalizedOpening}"
 
 At the END of every response, append this signal block (stripped before display):
 <SIGNALS>
@@ -76,8 +196,7 @@ At the END of every response, append this signal block (stripped before display)
 </SIGNALS>
 
 Set confidence 0-100. Set shouldShowContinue=true when confidence >= 72.
-Only include a dimension in probesCompleted when you have clear signal on it.${userContext?.prefs ? `\nUSER CONTEXT:\n- Goals: ${userContext.prefs.goals || 'not specified'}\n- Communication style: ${(userContext.prefs.tones || []).join(', ') || 'not specified'}\n- Use cases: ${(userContext.prefs.use_cases || []).join(', ') || 'not specified'}` : ''}
-${Object.keys(userContext?.gameObservations || {}).length > 0 ? `\nGAME OBSERVATIONS (actual behavior, not stated):\n${Object.entries(userContext!.gameObservations).map(([k, v]) => `- ${k}: ${v}`).join('\n')}` : ''}`;
+Only include a dimension in probesCompleted when you have clear signal on it.`;
 }
 
 // Calibrate Claude's self-reported confidence against verifiable signal evidence.

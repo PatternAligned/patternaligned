@@ -204,7 +204,7 @@ export default function InterviewChat({
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault();
                   if (input.trim()) handleSubmit(e as any);
                 }
@@ -223,7 +223,7 @@ export default function InterviewChat({
               Send
             </button>
           </form>
-          <p className="text-white text-xs mt-2 text-center">⌘↵ to send</p>
+          <p className="text-white text-xs mt-2 text-center">↵ send · shift+↵ newline</p>
         </div>
       </div>
 
