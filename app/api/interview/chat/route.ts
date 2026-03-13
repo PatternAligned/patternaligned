@@ -360,7 +360,7 @@ export async function POST(request: NextRequest) {
     // ensureTables is best-effort — table likely already exists from Render migration
     await ensureTables().catch((e) => console.error('ensureTables failed (non-blocking):', e.message));
 
-    const userContext = await getUserContext(userId).catch(() => ({ prefs: null, gameObservations: {} }));
+    const userContext = await getUserContext(userId).catch(() => ({ prefs: null, gameObservations: {} as Record<string, string>, profile: null, baselines: null }));
 
     const chatSessionId = session_id || `interview-${userId}-${Date.now()}`;
     const systemPrompt = buildSystemPrompt(nova_name || 'Nova', userContext);
