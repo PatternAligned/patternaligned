@@ -79,6 +79,32 @@ export default function InterviewChat({
 
   async function sendReply(userMsg: string, priorMessages: Message[]) {
     setLoading(true);
+
+    // Build previous Q&A pairs for the analysis endpoint
+    const previousAnswers: { question: string; answer: string }[] = [];
+    for (let i = 0; i < priorMessages.length - 1; i += 2) {
+      if (priorMessages[i]?.role === 'nova' && priorMessages[i + 1]?.role === 'user') {
+        previousAnswers.push({ question: priorMessages[i].content, answer: priorMessages[i + 1].content });
+      }
+    }
+    const exchangeNumber = previousAnswers.length + 1;
+
+    // Fire analysis in parallel — don't await, no latency added to Nova's response
+    const activeSessionId = sessionId;
+    if (activeSessionId) {
+      fetch('/api/interview/analyze-response', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          interviewSessionId: activeSessionId,
+          userMessage: userMsg,
+          exchangeNumber,
+          communicationStyle: [],
+          previousAnswers,
+        }),
+      }).catch(() => {}); // fire-and-forget
+    }
+
     try {
       const history = priorMessages.map((m) => ({
         role: m.role === 'nova' ? 'assistant' : 'user',
