@@ -184,7 +184,8 @@ export async function POST(request: NextRequest) {
     const { message, history = [], session_id, nova_name } = await request.json();
     if (!message) return NextResponse.json({ error: 'message required' }, { status: 400 });
 
-    await ensureTables();
+    // ensureTables is best-effort — table likely already exists from Render migration
+    await ensureTables().catch((e) => console.error('ensureTables failed (non-blocking):', e.message));
 
     const chatSessionId = session_id || `interview-${userId}-${Date.now()}`;
     const systemPrompt = buildSystemPrompt(nova_name || 'Nova');
@@ -251,7 +252,7 @@ export async function POST(request: NextRequest) {
       probes_completed: signals.probesCompleted,
     };
 
-    await upsertSession(userId, chatSessionId, status, insights);
+    await upsertSession(userId, chatSessionId, status, insights).catch((e) => console.error('upsertSession failed (non-blocking):', e.message));
 
     // Write to cognitive_baselines when interview is complete
     if (shouldShowContinue) {
