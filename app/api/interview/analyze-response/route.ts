@@ -119,40 +119,52 @@ Analyze this response. Respond ONLY in this exact JSON format, no other text:
       return NextResponse.json({ success: false, error: 'Analysis parse failed' }, { status: 200 });
     }
 
-    // Store in DB — append to exchanges_analysis array, update rolling confidence
+    // Compute rolling confidence from current analysis (will be refined after DB read)
+    const rolling = calculateRollingConfidence([{ confidenceScores: analysis.confidenceScores }]);
+
+    // Store in DB — atomic JSONB append, no read-modify-write race condition
     try {
-      const existing = await pool.query(
-        `SELECT exchanges_analysis FROM interview_sessions WHERE session_id = $1 AND user_id = $2`,
-        [interviewSessionId, userId]
+      await pool.query(
+        `UPDATE interview_sessions
+         SET
+           exchanges_analysis = COALESCE(exchanges_analysis, '[]'::jsonb) ||
+             jsonb_build_array(
+               jsonb_build_object(
+                 'exchange',           $1::int,
+                 'userMessage',        $2,
+                 'responseLength',     $3::int,
+                 'responseSpecificity',$4,
+                 'responseQuality',    $5,
+                 'confidenceScores',   $6::jsonb,
+                 'contradictions',     $7::jsonb,
+                 'followUpProbe',      $8,
+                 'analysis',           $9::jsonb,
+                 'createdAt',          NOW()
+               )
+             ),
+           rolling_confidence_scores = $10::jsonb,
+           updated_at = NOW()
+         WHERE user_id = $11 AND session_id = $12`,
+        [
+          exchangeNumber || 1,
+          userMessage,
+          analysis.responseLength ?? 0,
+          analysis.responseSpecificity ?? 'vague',
+          analysis.responseQuality ?? 'fair',
+          JSON.stringify(analysis.confidenceScores || {}),
+          JSON.stringify(analysis.contradictions || []),
+          analysis.followUpProbe || '',
+          JSON.stringify(analysis.analysis || {}),
+          JSON.stringify(rolling),
+          userId,
+          interviewSessionId,
+        ]
       );
-
-      if (existing.rows.length > 0) {
-        const currentExchanges: any[] = existing.rows[0].exchanges_analysis || [];
-        const updatedExchanges = [
-          ...currentExchanges,
-          {
-            exchange: exchangeNumber || currentExchanges.length + 1,
-            userMessage,
-            ...analysis,
-            timestamp: new Date().toISOString(),
-          },
-        ];
-        const rolling = calculateRollingConfidence(updatedExchanges);
-
-        await pool.query(
-          `UPDATE interview_sessions
-           SET exchanges_analysis = $1, rolling_confidence_scores = $2, updated_at = NOW()
-           WHERE session_id = $3 AND user_id = $4`,
-          [JSON.stringify(updatedExchanges), JSON.stringify(rolling), interviewSessionId, userId]
-        );
-
-        return NextResponse.json({ success: true, analysis, rollingConfidence: rolling });
-      }
     } catch (dbErr) {
       console.error('analyze-response DB write failed (non-blocking):', dbErr instanceof Error ? dbErr.message : dbErr);
     }
 
-    return NextResponse.json({ success: true, analysis, rollingConfidence: null });
+    return NextResponse.json({ success: true, analysis, rollingConfidence: rolling });
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
     console.error('analyze-response error:', msg);
